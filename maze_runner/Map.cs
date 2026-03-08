@@ -5,7 +5,16 @@ public abstract class Map(int sizeX, int sizeY)
 {
     protected readonly Tile[,] Tiles = new Tile[sizeX, sizeY];
     public abstract void GenerateMaze();
-    public Tile GetTile(int x, int y) => Tiles[x, y];
+
+    private static readonly WallTile OutOfBounds = new WallTile();
+    public Tile GetTile(int x, int y)
+    {
+        if (x < 0 || x >= sizeX || y < 0 || y >= sizeY)
+        {
+            return OutOfBounds;
+        }
+        return Tiles[x, y];
+    }
 
     public override string ToString()
     {

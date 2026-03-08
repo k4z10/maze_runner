@@ -61,12 +61,16 @@ public class GameEngine
         switch (e.KeyCode)
         {
             case KeyCode.W:
+                _player.Move(0, 1, _map);
                 break;
             case KeyCode.S:
+                _player.Move(0, -1, _map);
                 break;
             case KeyCode.A:
+                _player.Move(-1, 0, _map);
                 break;
             case KeyCode.D:
+                _player.Move(1, 0, _map);
                 break;
             case KeyCode.E:
                 break;
