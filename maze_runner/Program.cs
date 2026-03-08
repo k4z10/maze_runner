@@ -6,6 +6,8 @@ static class Program
     {
         // EmptyMaze map = new EmptyMaze(20, 40);
         var map = new FromFileMaze(20, 40, "maze1.txt"); 
+        // var map = new EmptyMaze(20, 40);
+        // var map = new RandomTiles(20, 40);
         map.GenerateMaze();
         var engine = new GameEngine(map);
         engine.Run();

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace maze_runner;
 public class Player
@@ -16,7 +17,6 @@ public class Player
             Position = (newX, newY);
         }
     }
-    
 }
 public readonly record struct Attributes(int Strength, int Health, int Resistance, int Stamina, int Luck, int Wisdom);
 

@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace maze_runner;
 using Terminal.Gui;
 
@@ -50,6 +52,7 @@ public class GameEngine
         _mainWindow.KeyDown += HandleKeyboard!;
         _mainWindow.MouseClick += HandleMouse!;
 
+        Render();
         Application.Run(_mainWindow);
         
         _mainWindow.Dispose();
@@ -61,21 +64,23 @@ public class GameEngine
         switch (e.KeyCode)
         {
             case KeyCode.W:
-                _player.Move(0, 1, _map);
-                break;
-            case KeyCode.S:
-                _player.Move(0, -1, _map);
-                break;
-            case KeyCode.A:
                 _player.Move(-1, 0, _map);
                 break;
-            case KeyCode.D:
+            case KeyCode.S:
                 _player.Move(1, 0, _map);
+                break;
+            case KeyCode.A:
+                _player.Move(0, -1, _map);
+                break;
+            case KeyCode.D:
+                _player.Move(0, 1, _map);
                 break;
             case KeyCode.E:
                 break;
             case KeyCode.Q:
-                Application.RequestStop(); 
+                break;
+            case KeyCode.Esc:
+                Application.RequestStop();
                 break;
             default:
                 return;
@@ -101,6 +106,15 @@ public class GameEngine
 
     private void Render()
     {
+        MapDisplay();
         _mainWindow.SetNeedsDraw();
+    }
+
+    private void MapDisplay()
+    {
+        var sb = new StringBuilder(_map.ToString());
+        sb[_player.Position.X * (_map.Cols + 1) + _player.Position.Y] = '@'; 
+        // sb[_player.Position.X * (_map.SizeY + 1)] = '*';
+        _mapLabel.Text = sb.ToString();
     }
 }
