@@ -6,7 +6,7 @@ public abstract class Map(int rows, int cols)
     public readonly int Rows = rows;
     public readonly int Cols = cols;
     
-    protected readonly Tile[,] Tiles = new Tile[rows, cols];
+    public Tile[,] Tiles = new Tile[rows, cols];
     public abstract void GenerateMaze();
 
     private static readonly WallTile OutOfBounds = new WallTile();
@@ -19,11 +19,8 @@ public abstract class Map(int rows, int cols)
         return Tiles[x, y];
     }
 
-    private string? _mapString;
     public override string ToString()
     {
-        if (_mapString != null)
-            return _mapString;
         StringBuilder sb = new();
         for (int i = 0; i < Rows; i++)
         {
@@ -33,8 +30,7 @@ public abstract class Map(int rows, int cols)
             }
             sb.AppendLine();
         }
-        _mapString = sb.ToString();
-        return _mapString;
+        return sb.ToString();
     }
 }
 
@@ -43,12 +39,8 @@ public class EmptyMaze(int rows, int cols) : Map(rows, cols)
     public override void GenerateMaze()
     {
         for (int i = 0; i < Rows; i++)
-        {
             for (int j = 0; j < Cols; j++)
-            {
-                Tiles[i,j] = new FloorTile();
-            }
-        }
+                Tiles[i, j] = new FloorTile();
     }
 }
 
@@ -90,7 +82,20 @@ public abstract class Tile
     public abstract char GetTileSymbol();
     
     public void AddItem(Item item) => _items.Push(item);
-    public Item PopItem() => _items.Pop();
+
+    public Item? PopItem()
+    {
+        Item item;
+        try
+        {
+            item = _items.Pop();
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        return item;
+    }
 }
 
 public class FloorTile : Tile
