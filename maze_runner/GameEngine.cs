@@ -5,9 +5,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace maze_runner;
 using Terminal.Gui;
 
-public class GameEngine(Map map)
+public class GameEngine
 {
     private readonly Player _player = new();
+    private readonly Map _map;
 
     private Window _mainWindow      = new();
     private Label _mapLabel         = new();
@@ -16,6 +17,25 @@ public class GameEngine(Map map)
     private TextView _itemsTextView = new();
     private Label _attributesLabel  = new();
     private Label _accountLabel     = new();
+    
+    private View _tileInfoOverlay       = new();
+    private TextView _tileInfoTextView  = new();
+    private const int TileInfoWidth     = 15;
+    private const int TileInfoHeight     = 5;
+    private int _tileOverlayToggle = 0;
+
+    private View _howToPlayOverlay = new();
+    private TextView _howToPlayTextView = new();
+    private readonly string _howToPlayText;
+    private int _howToPlayOverlayToggle = 1;
+
+    public GameEngine(Map map)
+    {
+        _map = map;
+        using var streamReader = new StreamReader("howToPlay.txt");
+        _howToPlayText = streamReader.ReadToEnd();
+    }
+    
  
     public void Run()
     {
@@ -38,11 +58,14 @@ public class GameEngine(Map map)
             Title = "Maze Runner",
             ColorScheme = scheme,
         };
+        
+        
         BuildUI();
         
         _mainWindow.KeyDown += HandleKeyboard!;
         _mainWindow.MouseClick += HandleMouse!;
 
+        HowToPlayOverlay();
         Render();
         Application.Run(_mainWindow);
         
@@ -52,12 +75,33 @@ public class GameEngine(Map map)
 
     private void BuildUI()
     {
+        _howToPlayOverlay = new View()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            Title = " How to play? Miniguide.",
+            BorderStyle = LineStyle.Single,
+            Visible = false,
+        };
+        _howToPlayTextView = new TextView()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            WordWrap = true,
+            ReadOnly = true,
+        };
+        _howToPlayOverlay.Add(_howToPlayTextView);
+        
         var mapFrame = new View()
         {
             X = 0,
             Y = 0,
-            Width = map.Cols + 2,
-            Height = map.Rows + 2,
+            Width = _map.Cols + 2,
+            Height = _map.Rows + 2,
             Title = " Map ",
             BorderStyle = LineStyle.Single
         };
@@ -67,9 +111,31 @@ public class GameEngine(Map map)
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            Text = map.ToString(),
+            Text = _map.ToString(),
         };
-        mapFrame.Add(_mapLabel);
+        // info overlay na temat zawartości kafelka
+        _tileInfoOverlay = new View()
+        {
+            X = 0,
+            Y = 0,
+            Width = TileInfoWidth,
+            Height = TileInfoHeight,
+            Title = " Contents ",
+            BorderStyle = LineStyle.RoundedDotted,
+            Visible = false
+        };
+        _tileInfoTextView = new TextView()
+        {
+            X = 0,
+            Y = 0,
+            Height = Dim.Fill(),
+            Width = Dim.Fill(),
+            WordWrap = true,
+            ReadOnly = true,
+        };
+        _tileInfoOverlay.Add(_tileInfoTextView);
+        
+        mapFrame.Add(_mapLabel, _tileInfoOverlay);
 
 
 
@@ -154,19 +220,19 @@ public class GameEngine(Map map)
         
         inventoryFrame.Add(handsFrame, itemsFrame, attributesFrame, accountFrame);
         
-        _mainWindow.Add(mapFrame, inventoryFrame);
+        _mainWindow.Add(mapFrame, inventoryFrame, _howToPlayOverlay); // _howToPlayOverlay always at the end.
     }
 
     private void HandleKeyboard(object sender, Key e)
     {
         switch (e.KeyCode)
         {
-            case KeyCode.W: _player.Move(-1, 0, map); break;
-            case KeyCode.S: _player.Move(1, 0, map); break;
-            case KeyCode.A: _player.Move(0, -1, map); break;
-            case KeyCode.D: _player.Move(0, 1, map); break;
+            case KeyCode.W: _player.Move(-1, 0, _map); break;
+            case KeyCode.S: _player.Move(1, 0, _map); break;
+            case KeyCode.A: _player.Move(0, -1, _map); break;
+            case KeyCode.D: _player.Move(0, 1, _map); break;
             case KeyCode.E:
-                var currentTilePick = map.GetTile(_player.Position.X, _player.Position.Y);
+                var currentTilePick = _map.GetTile(_player.Position.X, _player.Position.Y);
                 var item = currentTilePick.PopItem();
                 if (item == null)
                     break;
@@ -174,7 +240,7 @@ public class GameEngine(Map map)
                 item.Accept(pickUpAssistant);
                 break;
             case KeyCode.Q:
-                var currentTileDrop = map.GetTile(_player.Position.X, _player.Position.Y);
+                var currentTileDrop = _map.GetTile(_player.Position.X, _player.Position.Y);
                 var itemRightHand = _player.Inventory.RightHand;
                 var itemLeftHand = _player.Inventory.LeftHand;
                 if (itemRightHand != null)
@@ -202,11 +268,25 @@ public class GameEngine(Map map)
                 var equipAssistant = new EquipItemVisitor(_player);
                 itemToEquip.Accept(equipAssistant);
                 break;
+            case KeyCode.I:
+                if (_tileOverlayToggle == 0)
+                    _tileOverlayToggle++;
+                else
+                    _tileOverlayToggle--;
+                break;
+            case (KeyCode)'?':
+                if (_howToPlayOverlayToggle == 0)
+                    _howToPlayOverlayToggle++;
+                else 
+                    _howToPlayOverlayToggle--;
+                break;
             case KeyCode.Esc: Application.RequestStop(); break;
             default:
                 return;
         }
-
+        
+        HowToPlayOverlay();
+        TileInfoOverlay();
         e.Handled = true;
         Render();
     }
@@ -234,9 +314,13 @@ public class GameEngine(Map map)
 
     private void MapDisplay()
     {
-        var sb = new StringBuilder(map.ToString());
-        sb[_player.Position.X * (map.Cols + 1) + _player.Position.Y] = '@'; 
+        var sb = new StringBuilder(_map.ToString());
+        sb[_player.Position.X * (_map.Cols + 1) + _player.Position.Y] = '@'; 
         _mapLabel.Text = sb.ToString();
+        if (_map.GetTile(_player.Position.X, _player.Position.Y).Items.Any())
+        {
+            
+        }
     }
 
     private void InventoryDisplay()
@@ -261,5 +345,56 @@ public class GameEngine(Map map)
                                 $"Resistance: {_player.Attributes.Resistance}\n" +
                                 $"Luck:       {_player.Attributes.Luck}\n" +
                                 $"Wisdom:     {_player.Attributes.Wisdom}";
+    }
+
+    private void TileInfoOverlay()
+    {
+        var currentTile = _map.GetTile(_player.Position.X, _player.Position.Y);
+        if (currentTile.Items.Any() && _tileOverlayToggle == 1)
+        {
+            _tileInfoTextView.Text = string.Empty;
+            foreach (var item in currentTile.Items)
+                _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
+
+            var terminalX = _player.Position.Y - TileInfoWidth / 2;
+            var terminalY = _player.Position.X - TileInfoHeight;
+
+            if (terminalY < 0) terminalY = _player.Position.X + 1;
+            if (terminalX < 0) terminalX = 0;
+
+            if (terminalX + TileInfoWidth > _map.Cols)
+            {
+                terminalX = _player.Position.Y - TileInfoWidth - 1;
+                if (terminalX < 0) terminalX = 0;
+            }
+            
+            _tileInfoOverlay.X = terminalX;
+            _tileInfoOverlay.Y = terminalY;
+
+            if (!_tileInfoOverlay.Visible)
+                _tileInfoOverlay.Visible = true;
+            _tileInfoOverlay.SetNeedsDraw();
+        }
+        else
+        {
+            if (_tileInfoOverlay.Visible)
+            {
+                _tileInfoOverlay.Visible = false;
+                // _mapLabel.SetNeedsDraw();
+            }
+        }
+    }
+
+    private void HowToPlayOverlay()
+    {
+        if (_howToPlayOverlayToggle == 1)
+        {
+            _howToPlayTextView.Text = _howToPlayText;
+            _howToPlayOverlay.Visible = true;
+        }
+        else
+        {
+            _howToPlayOverlay.Visible = false;
+        }
     }
 }

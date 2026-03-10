@@ -5,11 +5,13 @@ static class Program
     static void Main(string[] args)
     {
         // EmptyMaze map = new EmptyMaze(20, 40);
-        // var map = new FromFileMaze(20, 40, "maze1.txt"); 
+         // var map = new FromFileMaze(20, 40, "maze1.txt"); 
         var map = new EmptyMaze(20, 40);
         // var map = new RandomTiles(20, 40);
         map.GenerateMaze();
-        
+
+        Console.WriteLine(Environment.CurrentDirectory);
+
         // Dodawanie Item do Planszy
         // TODO: delete
         map.Tiles[10,10].AddItem(new Coin(10));
