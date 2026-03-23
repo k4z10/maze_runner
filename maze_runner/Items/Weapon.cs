@@ -3,6 +3,7 @@ public abstract class Weapon : Item
 {
     public abstract int Damage { get; }
     public abstract Weight LightOrHeavy { get; } // Ile rąk potrzeba do trzymania broni
+    public abstract Weapon Clone();
     public enum Weight
     {
         Light,
@@ -19,6 +20,7 @@ public class Sword : Weapon
     public override string Description { get; } = "Light-weight and effective war weapon.";
     public override char TileSymbol { get; } = '!';
     public override void Accept(IItemVisitor visitor) => visitor.Visit(this);
+    public override Weapon Clone() => new Sword();
 }
 
 public class LongSword : Weapon
@@ -29,6 +31,7 @@ public class LongSword : Weapon
     public override string Description { get; } = "Heavy, long sword for the biggest targets.";
     public override char TileSymbol { get; } = '⸸';
     public override void Accept(IItemVisitor visitor) => visitor.Visit(this);
+    public override Weapon Clone() => new LongSword();
 }
 
 public class Knife : Weapon
@@ -39,4 +42,5 @@ public class Knife : Weapon
     public override string Description { get; } = "Light and handy weapon for every use case.";
     public override char TileSymbol { get; } = '⇀';
     public override void Accept(IItemVisitor visitor) => visitor.Visit(this);
+    public override Weapon Clone() => new Knife();
 }
