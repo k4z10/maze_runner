@@ -1,4 +1,6 @@
-namespace maze_runner;
+using maze_runner.Items.Visitors;
+
+namespace maze_runner.Items.Models;
 public class Coin(int amount) : Item
 {
     public override string Name => "Coin";

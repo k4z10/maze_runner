@@ -1,11 +1,7 @@
-namespace maze_runner;
-public interface IItemVisitor
-{
-    void Visit(Weapon weapon);
-    void Visit(Coin coin);
-    void Visit(Gold gold);
-    void Visit(UselessItem uselessItem);
-}
+using maze_runner.Items.Visitors;
+
+namespace maze_runner.Items.Models;
+
 public abstract class Item
 {
     public abstract string Name { get; }

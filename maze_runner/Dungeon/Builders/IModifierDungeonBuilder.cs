@@ -1,10 +1,5 @@
-namespace maze_runner;
-public interface IBaseDungeonBuilder
-{
-    IModifierDungeonBuilder CreateEmptyDungeon(int width, int height);
-    IModifierDungeonBuilder CreateFullDungeon(int width, int height);
-}
-
+namespace maze_runner.Dungeon.Builders;
+using Map;
 public interface IModifierDungeonBuilder
 {
     IModifierDungeonBuilder AddRooms(int maxCount);

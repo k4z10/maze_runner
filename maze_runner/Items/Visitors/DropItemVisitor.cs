@@ -1,4 +1,7 @@
-namespace maze_runner;
+namespace maze_runner.Items.Visitors;
+using Models;
+using Player;
+using Dungeon.Map;
 
 public class DropItemVisitor(Player player, Tile currentTile) : IItemVisitor
 {

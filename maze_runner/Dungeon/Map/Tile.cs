@@ -1,4 +1,7 @@
-namespace maze_runner;
+namespace maze_runner.Dungeon.Map;
+using Items.Models;
+using Items.Visitors;
+using Player;
 
 public abstract class Tile
 {

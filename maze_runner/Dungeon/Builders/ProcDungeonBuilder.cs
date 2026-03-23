@@ -1,4 +1,8 @@
-namespace maze_runner;
+namespace maze_runner.Dungeon.Builders;
+using Items.Models; 
+using Items.Weapons;
+using Items.UselessItems;
+using Map;
 
 public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
 {

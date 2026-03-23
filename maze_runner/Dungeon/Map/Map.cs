@@ -1,6 +1,5 @@
+namespace maze_runner.Dungeon.Map;
 using System.Text;
-
-namespace maze_runner;
 public class Map(int rows, int cols)
 {
     public readonly int Rows = rows;

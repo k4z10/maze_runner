@@ -1,6 +1,5 @@
-using System.Text;
-
-namespace maze_runner;
+namespace maze_runner.Player.Components;
+using Items.Models;
 
 public class Inventory
 {

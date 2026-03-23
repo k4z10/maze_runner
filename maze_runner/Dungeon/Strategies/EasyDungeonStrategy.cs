@@ -1,10 +1,6 @@
-namespace maze_runner;
-
-public interface IDungeonGenerationStrategy
-{
-    Map Generate(IBaseDungeonBuilder builder, int width, int height);
-}
-
+namespace maze_runner.Dungeon.Strategies;
+using Builders;
+using Map;
 public class EasyDungeonStrategy : IDungeonGenerationStrategy
 {
     public Map Generate(IBaseDungeonBuilder builder, int width, int height)

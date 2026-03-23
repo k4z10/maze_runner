@@ -1,9 +1,11 @@
-using System.Collections.ObjectModel;
-using System.Text;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using maze_runner.Items.Models;
 
-namespace maze_runner;
+namespace maze_runner.Core;
+using System.Text;
 using Terminal.Gui;
+using Player;
+using Dungeon.Map;
+using Items.Visitors;
 
 public class GameEngine
 {

@@ -1,7 +1,6 @@
-using System.Runtime.CompilerServices;
-using System.Text;
-
-namespace maze_runner;
+namespace maze_runner.Player;
+using Dungeon.Map;
+using Components;
 public class Player
 {
     public (int X, int Y) Position { get; private set;}

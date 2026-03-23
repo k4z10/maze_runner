@@ -1,4 +1,6 @@
-namespace maze_runner;
+namespace maze_runner.Items.Visitors;
+using Models;
+using Player;
 
 public class PickUpItemVisitor(Player player) : IItemVisitor
 {
