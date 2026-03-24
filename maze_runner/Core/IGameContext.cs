@@ -7,5 +7,4 @@ public interface IGameContext
 {
     Player Player { get; }
     Map Map { get; }
-    IModifierDungeonBuilder DungeonBuilder { get; }
 }

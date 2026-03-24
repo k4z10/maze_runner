@@ -1,3 +1,6 @@
+using maze_runner.Commands.Core;
+using maze_runner.Dungeon.Builders;
+using maze_runner.Dungeon.Strategies;
 using maze_runner.Items.Models;
 
 namespace maze_runner.Core;
@@ -7,10 +10,11 @@ using Player;
 using Dungeon.Map;
 using Items.Visitors;
 
-public class GameEngine
+public class GameEngine : IGameContext
 {
-    private readonly Player _player = new();
-    private readonly Map _map;
+    public Player Player { get; }
+    public Map Map { get; private set; }
+    private InputHandler _inputHandler;
 
     private Window _mainWindow      = new();
     private Label _mapLabel         = new();
@@ -28,17 +32,19 @@ public class GameEngine
 
     private View _howToPlayOverlay = new();
     private TextView _howToPlayTextView = new();
-    private readonly string _howToPlayText;
+    private readonly string _howToPlayText = File.ReadAllText("howToPlay.txt");
     private int _howToPlayOverlayToggle = 1;
 
-    public GameEngine(Map map)
+    public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)
     {
-        _map = map;
-        using var streamReader = new StreamReader("howToPlay.txt");
-        _howToPlayText = streamReader.ReadToEnd();
+        var ctx = strategy.Generate(width, height);
+        Map = ctx.Map;
+        _inputHandler = ctx.InputHandler;
+        Player.Position = (0, 0);
     }
-    
- 
+
+    public GameEngine(Player player) => Player = player;
+
     public void Run()
     {
         Application.Init();
@@ -102,8 +108,8 @@ public class GameEngine
         {
             X = 0,
             Y = 0,
-            Width = _map.Cols + 2,
-            Height = _map.Rows + 2,
+            Width = Map.Cols + 2,
+            Height = Map.Rows + 2,
             Title = " Map ",
             BorderStyle = LineStyle.Single
         };
@@ -113,7 +119,7 @@ public class GameEngine
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            Text = _map.ToString(),
+            Text = Map.ToString(),
         };
         // info overlay na temat zawartości kafelka
         _tileInfoOverlay = new View()
@@ -227,64 +233,49 @@ public class GameEngine
 
     private void HandleKeyboard(object sender, Key e)
     {
+        //     case KeyCode.Q:
+        //         var currentTileDrop = _map.GetTile(_player.Position.X, _player.Position.Y);
+        //         var itemRightHand = _player.Inventory.RightHand;
+        //         var itemLeftHand = _player.Inventory.LeftHand;
+        //         if (itemRightHand != null)
+        //         {
+        //             var dropAssistant = new DropItemVisitor(_player, currentTileDrop);
+        //             itemRightHand.Accept(dropAssistant);
+        //             break;
+        //         }
+        //         if (itemLeftHand != null)
+        //         {
+        //             var dropAssistant = new DropItemVisitor(_player, currentTileDrop);
+        //             itemLeftHand.Accept(dropAssistant);
+        //         }
+        //         break;
+        //     case KeyCode.F:
+        //         Item itemToEquip;
+        //         try
+        //         {
+        //             itemToEquip = _player.Inventory.Items.First();
+        //         }
+        //         catch (InvalidOperationException)
+        //         {
+        //             break;
+        //         }
+        //         var equipAssistant = new EquipItemVisitor(_player);
+        //         itemToEquip.Accept(equipAssistant);
+        //         break;
+
         switch (e.KeyCode)
         {
-            case KeyCode.W: _player.Move(-1, 0, _map); break;
-            case KeyCode.S: _player.Move(1, 0, _map); break;
-            case KeyCode.A: _player.Move(0, -1, _map); break;
-            case KeyCode.D: _player.Move(0, 1, _map); break;
-            case KeyCode.E:
-                var currentTilePick = _map.GetTile(_player.Position.X, _player.Position.Y);
-                var item = currentTilePick.PopItem();
-                if (item == null)
-                    break;
-                var pickUpAssistant = new PickUpItemVisitor(_player);
-                item.Accept(pickUpAssistant);
-                break;
-            case KeyCode.Q:
-                var currentTileDrop = _map.GetTile(_player.Position.X, _player.Position.Y);
-                var itemRightHand = _player.Inventory.RightHand;
-                var itemLeftHand = _player.Inventory.LeftHand;
-                if (itemRightHand != null)
-                {
-                    var dropAssistant = new DropItemVisitor(_player, currentTileDrop);
-                    itemRightHand.Accept(dropAssistant);
-                    break;
-                }
-                if (itemLeftHand != null)
-                {
-                    var dropAssistant = new DropItemVisitor(_player, currentTileDrop);
-                    itemLeftHand.Accept(dropAssistant);
-                }
-                break;
-            case KeyCode.F:
-                Item itemToEquip;
-                try
-                {
-                    itemToEquip = _player.Inventory.Items.First();
-                }
-                catch (InvalidOperationException)
-                {
-                    break;
-                }
-                var equipAssistant = new EquipItemVisitor(_player);
-                itemToEquip.Accept(equipAssistant);
-                break;
+            
             case KeyCode.I:
-                if (_tileOverlayToggle == 0)
-                    _tileOverlayToggle++;
-                else
-                    _tileOverlayToggle--;
+                _tileOverlayToggle ^= 1;
                 break;
             case (KeyCode)'?':
-                if (_howToPlayOverlayToggle == 0)
-                    _howToPlayOverlayToggle++;
-                else 
-                    _howToPlayOverlayToggle--;
+                _howToPlayOverlayToggle ^= 1;
                 break;
             case KeyCode.Esc: Application.RequestStop(); break;
             default:
-                return;
+                _inputHandler.ProcessInput((KeyCode)e, this);
+                break;
         }
         
         HowToPlayOverlay();
@@ -316,10 +307,10 @@ public class GameEngine
 
     private void MapDisplay()
     {
-        var sb = new StringBuilder(_map.ToString());
-        sb[_player.Position.X * (_map.Cols + 1) + _player.Position.Y] = '@'; 
+        var sb = new StringBuilder(Map.ToString());
+        sb[Player.Position.X * (Map.Cols + 1) + Player.Position.Y] = '@'; 
         _mapLabel.Text = sb.ToString();
-        if (_map.GetTile(_player.Position.X, _player.Position.Y).Items.Any())
+        if (Map.GetTile(Player.Position.X, Player.Position.Y).Items.Any())
         {
             
         }
@@ -327,46 +318,46 @@ public class GameEngine
 
     private void InventoryDisplay()
     {
-        _leftHandLabel.Text = _player.Inventory.LeftHand == null
+        _leftHandLabel.Text = Player.Inventory.LeftHand == null
             ? " "
-            : $"{_player.Inventory.LeftHand.Name}({_player.Inventory.LeftHand.TileSymbol})";
-        _rightHandLabel.Text = _player.Inventory.RightHand == null 
+            : $"{Player.Inventory.LeftHand.Name}({Player.Inventory.LeftHand.TileSymbol})";
+        _rightHandLabel.Text = Player.Inventory.RightHand == null 
             ? " " 
-            : $"{_player.Inventory.RightHand.Name}({_player.Inventory.RightHand.TileSymbol})";
+            : $"{Player.Inventory.RightHand.Name}({Player.Inventory.RightHand.TileSymbol})";
 
         var sb = new StringBuilder();
-        foreach (var item in _player.Inventory.Items)
+        foreach (var item in Player.Inventory.Items)
             sb.AppendLine($"{item.Name}({item.TileSymbol})");
         _itemsTextView.Text = sb.ToString();
         
-        _accountLabel.Text = $"Gold:  {_player.Inventory.Bundle.Gold}\n" +
-                             $"Coins: {_player.Inventory.Bundle.Coins}";
-        _attributesLabel.Text = $"Health:     {_player.Attributes.Health}\n" +
-                                $"Stamina:    {_player.Attributes.Stamina}\n" +
-                                $"Strength:   {_player.Attributes.Strength}\n" +
-                                $"Resistance: {_player.Attributes.Resistance}\n" +
-                                $"Luck:       {_player.Attributes.Luck}\n" +
-                                $"Wisdom:     {_player.Attributes.Wisdom}";
+        _accountLabel.Text = $"Gold:  {Player.Inventory.Bundle.Gold}\n" +
+                             $"Coins: {Player.Inventory.Bundle.Coins}";
+        _attributesLabel.Text = $"Health:     {Player.Attributes.Health}\n" +
+                                $"Stamina:    {Player.Attributes.Stamina}\n" +
+                                $"Strength:   {Player.Attributes.Strength}\n" +
+                                $"Resistance: {Player.Attributes.Resistance}\n" +
+                                $"Luck:       {Player.Attributes.Luck}\n" +
+                                $"Wisdom:     {Player.Attributes.Wisdom}";
     }
 
     private void TileInfoOverlay()
     {
-        var currentTile = _map.GetTile(_player.Position.X, _player.Position.Y);
+        var currentTile = Map.GetTile(Player.Position.X, Player.Position.Y);
         if (currentTile.Items.Any() && _tileOverlayToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
             foreach (var item in currentTile.Items)
                 _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
 
-            var terminalX = _player.Position.Y - TileInfoWidth / 2;
-            var terminalY = _player.Position.X - TileInfoHeight;
+            var terminalX = Player.Position.Y - TileInfoWidth / 2;
+            var terminalY = Player.Position.X - TileInfoHeight;
 
-            if (terminalY < 0) terminalY = _player.Position.X + 1;
+            if (terminalY < 0) terminalY = Player.Position.X + 1;
             if (terminalX < 0) terminalX = 0;
 
-            if (terminalX + TileInfoWidth > _map.Cols)
+            if (terminalX + TileInfoWidth > Map.Cols)
             {
-                terminalX = _player.Position.Y - TileInfoWidth - 1;
+                terminalX = Player.Position.Y - TileInfoWidth - 1;
                 if (terminalX < 0) terminalX = 0;
             }
             

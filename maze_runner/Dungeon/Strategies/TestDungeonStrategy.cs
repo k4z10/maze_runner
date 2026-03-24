@@ -1,18 +1,17 @@
 namespace maze_runner.Dungeon.Strategies;
-using Terminal.Gui;
-using Builders;
 using Core;
+using Builders;
 using Commands.Core;
+using Terminal.Gui;
 
-public class EasyDungeonStrategy : IDungeonGenerationStrategy
+public class TestDungeonStrategy : IDungeonGenerationStrategy
 {
     public LevelContext Generate(int width, int height)
     {
         var builder = new ProcDungeonBuilder();
-        var map = builder.CreateFullDungeon(width, height)
-            .AddRooms(10)
-            .ConnectRooms()
-            .AddWeapons(15)
+        var map = builder.CreateEmptyDungeon(width, height)
+            .AddWeapons(10)
+            .AddUselessItems(10)
             .Build();
 
         var inputHandler = new InputHandler();
