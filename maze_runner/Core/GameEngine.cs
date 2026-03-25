@@ -26,9 +26,11 @@ public class GameEngine : IGameContext
     
     private View _tileInfoOverlay       = new();
     private TextView _tileInfoTextView  = new();
+    private TextView _tooltipTextView   = new ();
+    private View _itemTooltipOverlay = new();
     private const int TileInfoWidth     = 15;
     private const int TileInfoHeight     = 5;
-    private int _tileOverlayToggle = 0;
+    private int _itemInfoToggle = 0;
 
     private View _howToPlayOverlay = new();
     private TextView _howToPlayTextView = new();
@@ -134,7 +136,7 @@ public class GameEngine : IGameContext
             Width = TileInfoWidth,
             Height = TileInfoHeight,
             Title = " Contents ",
-            BorderStyle = LineStyle.RoundedDotted,
+            BorderStyle = LineStyle.Rounded,
             Visible = false
         };
         _tileInfoTextView = new TextView()
@@ -193,24 +195,59 @@ public class GameEngine : IGameContext
             Title = " Inventory ",
             BorderStyle = LineStyle.Rounded
         };
+        
         _itemsListView = new ListView()
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             AllowsMarking = false,
         };
+        _itemTooltipOverlay = new View()
+        {
+            X = 20,
+            Y = -1,
+            Width = Dim.Fill(),
+            Height = Dim.Height(itemsFrame),
+            BorderStyle = LineStyle.Rounded,
+            Visible = false,
+        };
+        _tooltipTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), WordWrap = true, ReadOnly = true };
+        _itemTooltipOverlay.Add(_tooltipTextView);
+        
         _itemsListView.SetSource(Player.Inventory.Items);
-        _itemsListView.SelectedItemChanged += (sender, args) =>
+        _itemsListView.SelectedItemChanged += (_, args) =>
         {
             Player.Inventory.CurrentIndex = args.Item;
+            var selectedItem = (Item)args.Value;
+            string text = string.Empty;
+            var visitor = new FunctionalItemVisitor(
+                onWeapon: w => text = $"""
+                                       ({w.TileSymbol}) {w.Name}
+                                       {w.Description}
+                                       Damage: {w.Damage}
+                                       Weight: {w.LightOrHeavy}
+                                       """,
+                onUseless: u => text = $"""
+                                        ({u.TileSymbol}) {u.Name}
+                                        {u.Description}
+                                        """
+            );
+            selectedItem.Accept(visitor);
+            _tooltipTextView.Text = text;
         };
-        _itemsListView.RowRender += (sender, args) =>
+        _itemsListView.RowRender += (_, args) =>
         {
             args.RowAttribute = args.Row == _itemsListView.SelectedItem ?
                                 new Attribute(Color.Black, Color.White) :
                                 new Attribute(Color.White, Color.Black);
         };
-        itemsFrame.Add(_itemsListView);
+        Player.Inventory.Items.CollectionChanged += (_, _) =>
+        {
+            if (Player.Inventory.Items.Count != 1) return;
+            _itemsListView.SelectedItem = 0;
+        };
+        
+        itemsFrame.Add(_itemsListView, _itemTooltipOverlay);
         
         // Attributes Frame
         var attributesFrame = new View()
@@ -253,7 +290,7 @@ public class GameEngine : IGameContext
                 LoadLevel(new EasyDungeonStrategy());
                 break;
             case KeyCode.I:
-                _tileOverlayToggle ^= 1;
+                _itemInfoToggle ^= 1;
                 break;
             case (KeyCode)'?':
                 _howToPlayOverlayToggle ^= 1;
@@ -266,6 +303,7 @@ public class GameEngine : IGameContext
         
         HowToPlayOverlay();
         TileInfoOverlay();
+        ItemInfoOverlay();
         e.Handled = true;
         Render();
     }
@@ -329,7 +367,7 @@ public class GameEngine : IGameContext
     private void TileInfoOverlay()
     {
         var currentTile = Map.GetTile(Player.Position.Row, Player.Position.Col);
-        if (currentTile.Items.Any() && _tileOverlayToggle == 1)
+        if (currentTile.Items.Any() && _itemInfoToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
             foreach (var item in currentTile.Items)
@@ -361,6 +399,18 @@ public class GameEngine : IGameContext
                 _tileInfoOverlay.Visible = false;
                 // _mapLabel.SetNeedsDraw();
             }
+        }
+    }
+
+    private void ItemInfoOverlay()
+    {
+        if (_itemInfoToggle == 0)
+        {
+            _itemTooltipOverlay.Visible = false;
+        }
+        else
+        {
+            _itemTooltipOverlay.Visible = true;
         }
     }
 

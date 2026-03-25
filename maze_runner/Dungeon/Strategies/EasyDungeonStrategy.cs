@@ -21,15 +21,15 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
 
         var inputHandler = new InputHandler();
         
-        inputHandler.RegisterCommand(KeyCode.W, new Move(-1, 0));
-        inputHandler.RegisterCommand(KeyCode.S, new Move(1, 0));
-        inputHandler.RegisterCommand(KeyCode.A, new Move(0, -1));
-        inputHandler.RegisterCommand(KeyCode.D, new Move(0, 1));
+        inputHandler.RegisterCommand(Key.W, new Move(-1, 0));
+        inputHandler.RegisterCommand(Key.S, new Move(1, 0));
+        inputHandler.RegisterCommand(Key.A, new Move(0, -1));
+        inputHandler.RegisterCommand(Key.D, new Move(0, 1));
         
-        inputHandler.RegisterCommand(KeyCode.E, new PickUp());
-        inputHandler.RegisterCommand(KeyCode.Q, new Drop());
-        inputHandler.RegisterCommand(KeyCode.F, new Equip());
-        inputHandler.RegisterCommand(KeyCode.ShiftMask | KeyCode.F, new Unequip());
+        inputHandler.RegisterCommand(Key.E, new PickUp());
+        inputHandler.RegisterCommand(Key.Q, new Drop());
+        inputHandler.RegisterCommand(Key.F, new Equip());
+        inputHandler.RegisterCommand(Key.F.WithShift, new Unequip());
         
         string levelDescription = "This is easy level.";
         

@@ -14,10 +14,10 @@ public class InitialDungeonStrategy : IDungeonGenerationStrategy
 
         var inputHandler = new InputHandler();
         
-        inputHandler.RegisterCommand(KeyCode.W, new Move(-1, 0));
-        inputHandler.RegisterCommand(KeyCode.S, new Move(1, 0));
-        inputHandler.RegisterCommand(KeyCode.A, new Move(0, -1));
-        inputHandler.RegisterCommand(KeyCode.D, new Move(0, 1));
+        inputHandler.RegisterCommand(Key.W, new Move(-1, 0));
+        inputHandler.RegisterCommand(Key.S, new Move(1, 0));
+        inputHandler.RegisterCommand(Key.A, new Move(0, -1));
+        inputHandler.RegisterCommand(Key.D, new Move(0, 1));
         
         string levelDescription = "Initial level.";
         

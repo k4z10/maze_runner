@@ -6,11 +6,11 @@ using Terminal.Gui;
 
 public class InputHandler
 {
-    private readonly Dictionary<KeyCode, ICommand> _keyBindings = new();
+    private readonly Dictionary<Key, ICommand> _keyBindings = new();
     
-    public void RegisterCommand(KeyCode key, ICommand command) => _keyBindings[key] = command;
+    public void RegisterCommand(Key key, ICommand command) => _keyBindings[key] = command;
 
-    public void ProcessInput(KeyCode key, IGameContext ctx)
+    public void ProcessInput(Key key, IGameContext ctx)
     {
         if (_keyBindings.TryGetValue(key, out var command))
             if (command.CanExecute(ctx))
