@@ -4,7 +4,7 @@ using Builders;
 using Map;
 public interface IDungeonGenerationStrategy
 {
-    LevelContext Generate(int width, int height); 
+    LevelContext Generate(int width, int height);
 }
 
 

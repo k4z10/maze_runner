@@ -1,19 +1,16 @@
 namespace maze_runner.Dungeon.Strategies;
 using Core;
-using Builders;
-using Commands.Core;
 using Terminal.Gui;
+using Commands.Core;
+using Builders;
 using Commands;
 
-public class TestDungeonStrategy : IDungeonGenerationStrategy
+public class InitialDungeonStrategy : IDungeonGenerationStrategy
 {
     public LevelContext Generate(int width, int height)
     {
         var builder = new ProcDungeonBuilder();
-        var map = builder.CreateEmptyDungeon(width, height)
-            .AddWeapons(10)
-            .AddUselessItems(10)
-            .Build();
+        var map = builder.CreateEmptyDungeon(width, height).Build();
 
         var inputHandler = new InputHandler();
         
@@ -22,12 +19,7 @@ public class TestDungeonStrategy : IDungeonGenerationStrategy
         inputHandler.RegisterCommand(KeyCode.A, new Move(0, -1));
         inputHandler.RegisterCommand(KeyCode.D, new Move(0, 1));
         
-        inputHandler.RegisterCommand(KeyCode.E, new PickUp());
-        inputHandler.RegisterCommand(KeyCode.Q, new Drop());
-        inputHandler.RegisterCommand(KeyCode.F, new Equip());
-        inputHandler.RegisterCommand(KeyCode.ShiftMask | KeyCode.F, new Unequip());
-        
-        string levelDescription = "This is test level.";
+        string levelDescription = "Initial level.";
         
         return new LevelContext(map, inputHandler, levelDescription);
     }

@@ -3,7 +3,7 @@ using Dungeon.Map;
 using Components;
 public class Player
 {
-    public (int X, int Y) Position { get; set; }
+    public (int Row, int Col) Position { get; set; }
     public Attributes Attributes { get; private set; }
     public Inventory Inventory = new();
 }

@@ -1,7 +1,8 @@
 using maze_runner.Core;
 using maze_runner.Items.Visitors;
 
-namespace maze_runner.Commands.Core;
+namespace maze_runner.Commands;
+using Core;
 
 public class PickUp : ICommand
 {
@@ -26,4 +27,6 @@ public class PickUp : ICommand
         
         tile.Accept(visitor);
     }
+
+    public string Description { get; } = "Pick up item form current tile";
 }

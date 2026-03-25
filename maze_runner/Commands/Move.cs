@@ -1,6 +1,6 @@
+namespace maze_runner.Commands;
+using Core;
 using maze_runner.Core;
-
-namespace maze_runner.Commands.Core;
 
 public class Move : ICommand
 {
@@ -15,17 +15,19 @@ public class Move : ICommand
 
     public bool CanExecute(IGameContext ctx)
     {
-        int targetX = ctx.Player.Position.X + _dx;
-        int targetY = ctx.Player.Position.Y + _dy;
+        int targetX = ctx.Player.Position.Row + _dx;
+        int targetY = ctx.Player.Position.Col + _dy;
         
         return ctx.Map.GetTile(targetX, targetY).TryEnter(ctx.Player);
     }
 
     public void Execute(IGameContext ctx)
     {
-        int newX = ctx.Player.Position.X + _dx;
-        int newY = ctx.Player.Position.Y + _dy;
+        int newX = ctx.Player.Position.Row + _dx;
+        int newY = ctx.Player.Position.Col + _dy;
         
         ctx.Player.Position = (newX, newY);
     }
+
+    public string Description { get; } = "Move player";
 }

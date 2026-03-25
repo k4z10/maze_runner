@@ -4,6 +4,7 @@ using Items.Models;
 public class Inventory
 {
     public List<Item> Items = new();
+    public int CurrentIndex = 0;
     public Account Bundle = new();
     
     public Item? LeftHand = null;

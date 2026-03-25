@@ -14,7 +14,7 @@ public class GameEngine : IGameContext
 {
     public Player Player { get; }
     public Map Map { get; private set; }
-    private InputHandler _inputHandler;
+    private LevelContext _currentLevelContext;
 
     private Window _mainWindow      = new();
     private Label _mapLabel         = new();
@@ -32,18 +32,23 @@ public class GameEngine : IGameContext
 
     private View _howToPlayOverlay = new();
     private TextView _howToPlayTextView = new();
-    private readonly string _howToPlayText = File.ReadAllText("howToPlay.txt");
     private int _howToPlayOverlayToggle = 1;
 
     public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)
     {
         var ctx = strategy.Generate(width, height);
+        _currentLevelContext = ctx;
         Map = ctx.Map;
-        _inputHandler = ctx.InputHandler;
         Player.Position = (0, 0);
     }
 
-    public GameEngine(Player player) => Player = player;
+    public GameEngine(Player player)
+    {
+        var ctx = new InitialDungeonStrategy().Generate(40, 20);
+        _currentLevelContext = ctx;
+        Map = ctx.Map;
+        Player = player;
+    }
 
     public void Run()
     {
@@ -265,7 +270,9 @@ public class GameEngine : IGameContext
 
         switch (e.KeyCode)
         {
-            
+            case KeyCode.Tab:
+                LoadLevel(new EasyDungeonStrategy());
+                break;
             case KeyCode.I:
                 _tileOverlayToggle ^= 1;
                 break;
@@ -274,7 +281,7 @@ public class GameEngine : IGameContext
                 break;
             case KeyCode.Esc: Application.RequestStop(); break;
             default:
-                _inputHandler.ProcessInput((KeyCode)e, this);
+                _currentLevelContext.InputHandler.ProcessInput((KeyCode)e, this);
                 break;
         }
         
@@ -308,9 +315,9 @@ public class GameEngine : IGameContext
     private void MapDisplay()
     {
         var sb = new StringBuilder(Map.ToString());
-        sb[Player.Position.X * (Map.Cols + 1) + Player.Position.Y] = '@'; 
+        sb[Player.Position.Row * (Map.Cols + 1) + Player.Position.Col] = '@'; 
         _mapLabel.Text = sb.ToString();
-        if (Map.GetTile(Player.Position.X, Player.Position.Y).Items.Any())
+        if (Map.GetTile(Player.Position.Row, Player.Position.Col).Items.Any())
         {
             
         }
@@ -342,22 +349,22 @@ public class GameEngine : IGameContext
 
     private void TileInfoOverlay()
     {
-        var currentTile = Map.GetTile(Player.Position.X, Player.Position.Y);
+        var currentTile = Map.GetTile(Player.Position.Row, Player.Position.Col);
         if (currentTile.Items.Any() && _tileOverlayToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
             foreach (var item in currentTile.Items)
                 _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
 
-            var terminalX = Player.Position.Y - TileInfoWidth / 2;
-            var terminalY = Player.Position.X - TileInfoHeight;
+            var terminalX = Player.Position.Col - TileInfoWidth / 2;
+            var terminalY = Player.Position.Row - TileInfoHeight;
 
-            if (terminalY < 0) terminalY = Player.Position.X + 1;
+            if (terminalY < 0) terminalY = Player.Position.Row + 1;
             if (terminalX < 0) terminalX = 0;
 
             if (terminalX + TileInfoWidth > Map.Cols)
             {
-                terminalX = Player.Position.Y - TileInfoWidth - 1;
+                terminalX = Player.Position.Col - TileInfoWidth - 1;
                 if (terminalX < 0) terminalX = 0;
             }
             
@@ -382,7 +389,20 @@ public class GameEngine : IGameContext
     {
         if (_howToPlayOverlayToggle == 1)
         {
-            _howToPlayTextView.Text = _howToPlayText;
+            var sb = new StringBuilder();
+            
+            sb.AppendLine(_currentLevelContext.LevelName);
+            sb.AppendLine(_currentLevelContext.Description);
+            sb.AppendLine();
+            sb.AppendLine(_currentLevelContext.InputHandler.ToString());
+            sb.Append("""
+                      [?] - toggle help
+                      [i] - toggle tile info
+                      [tab] - generate new level
+                      [esc] - quit game
+                      """);
+            
+            _howToPlayTextView.Text = sb.ToString();
             _howToPlayOverlay.Visible = true;
         }
         else

@@ -3,6 +3,7 @@ using Terminal.Gui;
 using Builders;
 using Core;
 using Commands.Core;
+using Commands;
 
 public class EasyDungeonStrategy : IDungeonGenerationStrategy
 {
@@ -23,7 +24,9 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
         inputHandler.RegisterCommand(KeyCode.D, new Move(0, 1));
         
         inputHandler.RegisterCommand(KeyCode.E, new PickUp());
+
+        string levelDescription = "This is easy level.";
         
-        return new LevelContext(map, inputHandler);
+        return new LevelContext(map, inputHandler, levelDescription, "Easy");
     }
 }
