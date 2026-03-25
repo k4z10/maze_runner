@@ -3,6 +3,8 @@ using Map;
 public interface IModifierDungeonBuilder
 {
     IModifierDungeonBuilder AddRooms(int maxCount);
+    IModifierDungeonBuilder AddStartingRoom();
+    
     IModifierDungeonBuilder AddCentralRoom(int width, int height);
     IModifierDungeonBuilder AddUselessItems(int count);
     IModifierDungeonBuilder AddWeapons(int count);

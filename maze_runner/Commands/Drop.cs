@@ -13,7 +13,7 @@ public class Drop : ICommand
     public bool CanExecute(IGameContext context)
     {
         var inventory = context.Player.Inventory;
-        if (inventory.RightHand == null && inventory.LeftHand == null && inventory.Items.Count <= 0 && inventory.Bundle.Coins <= 0 && inventory.Bundle.Gold <= 0) return false;
+        if (inventory.Items.Count <= 0 && inventory.Bundle.Coins <= 0 && inventory.Bundle.Gold <= 0) return false;
         return true;
     }
 

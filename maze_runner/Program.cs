@@ -9,8 +9,8 @@ static class Program
     {
         var player = new Player.Player();
         var engine = new GameEngine(player);
-        // engine.LoadLevel(new EasyDungeonStrategy());
-        engine.LoadLevel(new TestDungeonStrategy());
+        engine.LoadLevel(new EasyDungeonStrategy());
+        // engine.LoadLevel(new TestDungeonStrategy());
         engine.Run();
     }
 }

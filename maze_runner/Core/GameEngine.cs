@@ -20,9 +20,9 @@ public class GameEngine : IGameContext
     private Label _mapLabel         = new();
     private Label _leftHandLabel    = new();
     private Label _rightHandLabel   = new();
-    private TextView _itemsTextView = new();
     private Label _attributesLabel  = new();
     private Label _accountLabel     = new();
+    private ListView _itemsListView = new();
     
     private View _tileInfoOverlay       = new();
     private TextView _tileInfoTextView  = new();
@@ -193,15 +193,24 @@ public class GameEngine : IGameContext
             Title = " Inventory ",
             BorderStyle = LineStyle.Rounded
         };
-        _itemsTextView = new TextView()
+        _itemsListView = new ListView()
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            WordWrap = true,
-            ReadOnly = true,
-            AllowsTab = false
+            AllowsMarking = false,
         };
-        itemsFrame.Add(_itemsTextView);
+        _itemsListView.SetSource(Player.Inventory.Items);
+        _itemsListView.SelectedItemChanged += (sender, args) =>
+        {
+            Player.Inventory.CurrentIndex = args.Item;
+        };
+        _itemsListView.RowRender += (sender, args) =>
+        {
+            args.RowAttribute = args.Row == _itemsListView.SelectedItem ?
+                                new Attribute(Color.Black, Color.White) :
+                                new Attribute(Color.White, Color.Black);
+        };
+        itemsFrame.Add(_itemsListView);
         
         // Attributes Frame
         var attributesFrame = new View()
@@ -238,36 +247,6 @@ public class GameEngine : IGameContext
 
     private void HandleKeyboard(object sender, Key e)
     {
-        //     case KeyCode.Q:
-        //         var currentTileDrop = _map.GetTile(_player.Position.X, _player.Position.Y);
-        //         var itemRightHand = _player.Inventory.RightHand;
-        //         var itemLeftHand = _player.Inventory.LeftHand;
-        //         if (itemRightHand != null)
-        //         {
-        //             var dropAssistant = new DropItemVisitor(_player, currentTileDrop);
-        //             itemRightHand.Accept(dropAssistant);
-        //             break;
-        //         }
-        //         if (itemLeftHand != null)
-        //         {
-        //             var dropAssistant = new DropItemVisitor(_player, currentTileDrop);
-        //             itemLeftHand.Accept(dropAssistant);
-        //         }
-        //         break;
-        //     case KeyCode.F:
-        //         Item itemToEquip;
-        //         try
-        //         {
-        //             itemToEquip = _player.Inventory.Items.First();
-        //         }
-        //         catch (InvalidOperationException)
-        //         {
-        //             break;
-        //         }
-        //         var equipAssistant = new EquipItemVisitor(_player);
-        //         itemToEquip.Accept(equipAssistant);
-        //         break;
-
         switch (e.KeyCode)
         {
             case KeyCode.Tab:
@@ -317,6 +296,7 @@ public class GameEngine : IGameContext
         var sb = new StringBuilder(Map.ToString());
         sb[Player.Position.Row * (Map.Cols + 1) + Player.Position.Col] = '@'; 
         _mapLabel.Text = sb.ToString();
+        
         if (Map.GetTile(Player.Position.Row, Player.Position.Col).Items.Any())
         {
             
@@ -335,7 +315,6 @@ public class GameEngine : IGameContext
         var sb = new StringBuilder();
         foreach (var item in Player.Inventory.Items)
             sb.AppendLine($"{item.Name}({item.TileSymbol})");
-        _itemsTextView.Text = sb.ToString();
         
         _accountLabel.Text = $"Gold:  {Player.Inventory.Bundle.Gold}\n" +
                              $"Coins: {Player.Inventory.Bundle.Coins}";

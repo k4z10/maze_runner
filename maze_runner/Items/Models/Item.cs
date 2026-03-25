@@ -9,4 +9,6 @@ public abstract class Item
     public abstract char TileSymbol { get; }
     
     public abstract void Accept(IItemVisitor visitor);
+
+    public override string ToString() => $"({TileSymbol}) {Name}";
 }

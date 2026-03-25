@@ -23,6 +23,8 @@ public class Map(int rows, int cols)
         return true;
     }
 
+    public (int row, int col) GetSpawningPosition() => (0, 0);
+
     public override string ToString()
     {
         StringBuilder sb = new();

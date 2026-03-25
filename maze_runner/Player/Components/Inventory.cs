@@ -1,9 +1,11 @@
+using System.Collections.ObjectModel;
+
 namespace maze_runner.Player.Components;
 using Items.Models;
 
 public class Inventory
 {
-    public List<Item> Items = new();
+    public ObservableCollection<Item> Items = new();
     public int CurrentIndex = 0;
     public Account Bundle = new();
     

@@ -11,9 +11,12 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
     {
         var builder = new ProcDungeonBuilder();
         var map = builder.CreateFullDungeon(width, height)
+            .AddCentralRoom(5, 3)
+            .AddStartingRoom()
             .AddRooms(10)
             .ConnectRooms()
-            .AddWeapons(15)
+            .AddWeapons(10)
+            .AddUselessItems(10)
             .Build();
 
         var inputHandler = new InputHandler();
@@ -24,7 +27,10 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
         inputHandler.RegisterCommand(KeyCode.D, new Move(0, 1));
         
         inputHandler.RegisterCommand(KeyCode.E, new PickUp());
-
+        inputHandler.RegisterCommand(KeyCode.Q, new Drop());
+        inputHandler.RegisterCommand(KeyCode.F, new Equip());
+        inputHandler.RegisterCommand(KeyCode.ShiftMask | KeyCode.F, new Unequip());
+        
         string levelDescription = "This is easy level.";
         
         return new LevelContext(map, inputHandler, levelDescription, "Easy");

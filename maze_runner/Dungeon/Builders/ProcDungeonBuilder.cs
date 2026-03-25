@@ -76,6 +76,15 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         return this;
     }
 
+    public IModifierDungeonBuilder AddStartingRoom()
+    {
+        var (row, col) = _map.GetSpawningPosition();
+        var spawnRoom = new Room(col, row, 2, 2);
+        CraveRoom(spawnRoom);
+        _rooms.Add(spawnRoom);
+        return this;
+    }
+
     public IModifierDungeonBuilder AddWeapons(int count)
     {
         for (int i = 0; i < count; ++i)
