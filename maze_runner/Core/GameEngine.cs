@@ -215,25 +215,27 @@ public class GameEngine : IGameContext
         _itemTooltipOverlay.Add(_tooltipTextView);
         
         _itemsListView.SetSource(Player.Inventory.Items);
+        _itemsListView.CollectionChanged += (_, args) =>
+        {
+            var items = Player.Inventory.Items;
+            if (items.Count <= 0)
+            {
+                _tooltipTextView.Text = string.Empty;
+                _itemTooltipOverlay.SetNeedsDraw();
+                return;
+            }
+
+            if (args.OldStartingIndex == Player.Inventory.CurrentIndex)
+            {
+                ItemInfoWrite(items[Player.Inventory.CurrentIndex]);
+            }
+            if (args.NewStartingIndex == Player.Inventory.CurrentIndex)
+                ItemInfoWrite(items[Player.Inventory.CurrentIndex]);
+        };
         _itemsListView.SelectedItemChanged += (_, args) =>
         {
             Player.Inventory.CurrentIndex = args.Item;
-            var selectedItem = (Item)args.Value;
-            string text = string.Empty;
-            var visitor = new FunctionalItemVisitor(
-                onWeapon: w => text = $"""
-                                       ({w.TileSymbol}) {w.Name}
-                                       {w.Description}
-                                       Damage: {w.Damage}
-                                       Weight: {w.LightOrHeavy}
-                                       """,
-                onUseless: u => text = $"""
-                                        ({u.TileSymbol}) {u.Name}
-                                        {u.Description}
-                                        """
-            );
-            selectedItem.Accept(visitor);
-            _tooltipTextView.Text = text;
+            ItemInfoWrite((Item)args.Value);
         };
         _itemsListView.RowRender += (_, args) =>
         {
@@ -412,6 +414,26 @@ public class GameEngine : IGameContext
         {
             _itemTooltipOverlay.Visible = true;
         }
+    }
+
+    private void ItemInfoWrite(Item item)
+    {
+        var selectedItem = item;
+        string text = string.Empty;
+        var visitor = new FunctionalItemVisitor(
+            onWeapon: w => text = $"""
+                                   ({w.TileSymbol}) {w.Name}
+                                   {w.Description}
+                                   Damage: {w.Damage}
+                                   Weight: {w.LightOrHeavy}
+                                   """,
+            onUseless: u => text = $"""
+                                    ({u.TileSymbol}) {u.Name}
+                                    {u.Description}
+                                    """
+        );
+        selectedItem.Accept(visitor);
+        _tooltipTextView.Text = text;
     }
 
     private void HowToPlayOverlay()
