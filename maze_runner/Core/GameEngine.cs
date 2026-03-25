@@ -288,15 +288,9 @@ public class GameEngine : IGameContext
     {
         switch (e.KeyCode)
         {
-            case KeyCode.Tab:
-                LoadLevel(new EasyDungeonStrategy());
-                break;
-            case KeyCode.I:
-                _itemInfoToggle ^= 1;
-                break;
-            case (KeyCode)'?':
-                _howToPlayOverlayToggle ^= 1;
-                break;
+            case KeyCode.Tab: LoadLevel(new EasyDungeonStrategy()); break;
+            case KeyCode.I: _itemInfoToggle ^= 1; break;
+            case (KeyCode)'?': _howToPlayOverlayToggle ^= 1; break;
             case KeyCode.Esc: Application.RequestStop(); break;
             default:
                 _currentLevelContext.InputHandler.ProcessInput((KeyCode)e, this);
@@ -446,13 +440,12 @@ public class GameEngine : IGameContext
             sb.AppendLine(_currentLevelContext.Description);
             sb.AppendLine();
             sb.AppendLine(_currentLevelContext.InputHandler.ToString());
-            sb.Append("""
-                      [?] - toggle help
-                      [i] - toggle tile info
-                      [tab] - generate new level
-                      [esc] - quit game
+            sb.Append($"""
+                      [{(Key)'?'}] - toggle help
+                      [{Key.I}] - toggle tile info
+                      [{Key.Tab}] - generate new level
+                      [{Key.Q}] - quit game
                       """);
-            
             _howToPlayTextView.Text = sb.ToString();
             _howToPlayOverlay.Visible = true;
         }
