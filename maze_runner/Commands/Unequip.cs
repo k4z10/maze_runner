@@ -1,6 +1,4 @@
 using maze_runner.Core;
-using maze_runner.Items.Visitors;
-
 namespace maze_runner.Commands;
 using Core;
 public class Unequip : ICommand
@@ -18,22 +16,14 @@ public class Unequip : ICommand
     public void Execute(IGameContext context)
     {
         var inventory = context.Player.Inventory;
-        var rightHand = inventory.RightHand;
-        var leftHand = inventory.LeftHand;
-        var visitor = new FunctionalItemVisitor(
-            onWeapon: w => inventory.TryUnequip(w),
-            onUseless: u => inventory.TryUnequip(u)
-        );
-
+        var rightHand = inventory.RightHand?.GetEquippableFeature();
+        var leftHand = inventory.LeftHand?.GetEquippableFeature();
+        
         if (rightHand != null)
         {
-            rightHand.Accept(visitor);
+            rightHand.TryUnequip(inventory);
             return;
         }
-
-        if (leftHand != null)
-        {
-            leftHand.Accept(visitor);
-        }
+        leftHand?.TryUnequip(inventory);
     }
 }

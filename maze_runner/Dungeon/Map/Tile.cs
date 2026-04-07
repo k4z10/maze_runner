@@ -1,6 +1,5 @@
 namespace maze_runner.Dungeon.Map;
 using Items.Models;
-using Items.Visitors;
 using Player;
 
 public abstract class Tile
@@ -10,12 +9,6 @@ public abstract class Tile
     
     public void AddItem(Item item) => _items.Push(item);
     public Item? PopItem() => _items.Count > 0 ? _items.Pop() : null;
-
-    public void Interact(IItemVisitor visitor)
-    {
-        if (_items.TryPeek(out var item))
-            item.Accept(visitor);
-    }
 
     public abstract bool TryEnter(Player player);
     public abstract char GetTileSymbol();

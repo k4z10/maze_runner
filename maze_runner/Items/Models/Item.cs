@@ -1,5 +1,3 @@
-using maze_runner.Items.Visitors;
-
 namespace maze_runner.Items.Models;
 
 public abstract class Item
@@ -8,7 +6,10 @@ public abstract class Item
     public abstract string Description { get; }
     public abstract char TileSymbol { get; }
     
-    public abstract void Accept(IItemVisitor visitor);
+    public virtual IEquippable? GetEquippableFeature() => null;
+    public virtual IStorable? GetStorableFeature() => null;
+    public virtual ICurrency? GetCurrencyFeature() => null;
+    public virtual IWeapon? GetWeaponFeature() => null;
 
     public override string ToString() => $"({TileSymbol}) {Name}";
 }

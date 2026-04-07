@@ -1,5 +1,3 @@
-using maze_runner.Commands.Core;
-using maze_runner.Dungeon.Builders;
 using maze_runner.Dungeon.Strategies;
 using maze_runner.Items.Models;
 
@@ -8,8 +6,6 @@ using System.Text;
 using Terminal.Gui;
 using Player;
 using Dungeon.Map;
-using Items.Visitors;
-
 public class GameEngine : IGameContext
 {
     public Player Player { get; }
@@ -350,8 +346,8 @@ public class GameEngine : IGameContext
         foreach (var item in Player.Inventory.Items)
             sb.AppendLine($"{item.Name}({item.TileSymbol})");
         
-        _accountLabel.Text = $"Gold:  {Player.Inventory.Bundle.Gold}\n" +
-                             $"Coins: {Player.Inventory.Bundle.Coins}";
+        _accountLabel.Text = $"Gold:  {Player.Inventory.Gold}\n" +
+                             $"Coins: {Player.Inventory.Coins}";
         _attributesLabel.Text = $"Health:     {Player.Attributes.Health}\n" +
                                 $"Stamina:    {Player.Attributes.Stamina}\n" +
                                 $"Strength:   {Player.Attributes.Strength}\n" +
@@ -413,20 +409,20 @@ public class GameEngine : IGameContext
     private void ItemInfoWrite(Item item)
     {
         var selectedItem = item;
-        string text = string.Empty;
-        var visitor = new FunctionalItemVisitor(
-            onWeapon: w => text = $"""
-                                   ({w.TileSymbol}) {w.Name}
-                                   {w.Description}
-                                   Damage: {w.Damage}
-                                   Weight: {w.LightOrHeavy}
-                                   """,
-            onUseless: u => text = $"""
-                                    ({u.TileSymbol}) {u.Name}
-                                    {u.Description}
-                                    """
-        );
-        selectedItem.Accept(visitor);
+        string text = $"""
+                       ({item.TileSymbol}) {item.Name}
+                       {item.Description}
+                       """;
+        var weaponFeature = item.GetWeaponFeature();
+        if (weaponFeature != null)
+        {
+            text += $"""
+                    
+                    Damage: {weaponFeature.Damage}
+                    Weight: {(weaponFeature.RequiredHands == 1 ? "Light" :"Heavy")}
+                    """;
+        }
+        
         _tooltipTextView.Text = text;
     }
 
