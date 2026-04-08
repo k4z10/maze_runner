@@ -148,6 +148,11 @@ public class TerminalUIManager : IGameUIManager
         // Player always on top
         sb[player.Position.Row * (_engine.CurrentMap.Cols + Environment.NewLine.Length) + player.Position.Col] = player.Symbol;
 
+        if (!player.IsAlive)
+        {
+            Quit();
+        }
+
         _mapLabel.Text = sb.ToString();
     }
 
