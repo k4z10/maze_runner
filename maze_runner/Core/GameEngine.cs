@@ -347,12 +347,12 @@ public class GameEngine : IGameContext
         
         _accountLabel.Text = $"Gold:  {Player.Inventory.Gold}\n" +
                              $"Coins: {Player.Inventory.Coins}";
-        _attributesLabel.Text = $"Health:     {Player.Stats.Health}\n" +
-                                $"Stamina:    {Player.Stats.Stamina}\n" +
-                                $"Strength:   {Player.Stats.Strength}\n" +
-                                $"Resistance: {Player.Stats.Resistance}\n" +
-                                $"Luck:       {Player.Stats.Luck}\n" +
-                                $"Wisdom:     {Player.Stats.Wisdom}";
+        _attributesLabel.Text = $"Health:     {Player.CurrentStats.Dexterity}\n" +
+                                $"Stamina:    {Player.CurrentStats.Stamina}\n" +
+                                $"Strength:   {Player.CurrentStats.Strength}\n" +
+                                $"Resistance: {Player.CurrentStats.Resistance}\n" +
+                                $"Luck:       {Player.CurrentStats.Luck}\n" +
+                                $"Wisdom:     {Player.CurrentStats.Wisdom}";
     }
 
     private void TileInfoOverlay()
@@ -417,7 +417,7 @@ public class GameEngine : IGameContext
         {
             text += $"""
                     
-                    Damage: {weaponFeature.Damage}
+                    Damage: {weaponFeature.BaseDamage}
                     Weight: {(weaponFeature.RequiredHands == 1 ? "Light" :"Heavy")}
                     """;
         }

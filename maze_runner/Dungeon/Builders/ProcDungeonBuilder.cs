@@ -108,7 +108,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
             var prototype = _weaponsProt[_random.Next(_weaponsProt.Count)];
             
-            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new SharpnessModifier(prototype.Clone()));
+            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(new SharpnessModifier(prototype.Clone())));
         }
 
         _inputHandler.RegisterCommand(Key.E, new PickUp());

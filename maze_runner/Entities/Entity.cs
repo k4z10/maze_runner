@@ -6,11 +6,9 @@ public abstract class Entity
     public int Health { get; protected set; }
     public int MaxHealth { get; protected set; }
     public int Armor { get; protected set; }
-    public Attributes Stats { get; protected set; }
-    
+    public Attributes BaseStats { get; protected set; }
+    public virtual Attributes CurrentStats => BaseStats;
     public bool IsAlive => Health > 0;
-    public abstract int Defense();
-    public abstract int AttackPower();
 
     public void TakeDamage(int damage)
     {
@@ -19,4 +17,5 @@ public abstract class Entity
         if (Health < 0) Health = 0;
     }
 }
-public readonly record struct Attributes(int Strength, int Health, int Resistance, int Stamina, int Luck, int Wisdom);
+
+public record struct Attributes(int Strength, int Dexterity, int Resistance, int Stamina, int Luck, int Wisdom);

@@ -5,17 +5,20 @@ namespace maze_runner.Entities.Player;
 public class Player : Entity
 {
     public readonly Inventory Inventory = new();
-    public override int Defense()
-    {
-        throw new NotImplementedException();
-    }
 
-    public override int AttackPower()
+    public override Attributes CurrentStats
     {
-        var weapon = Inventory.RightHand?.GetWeaponFeature();
-        if (weapon == null) return 0;
+        get
+        {
+            var s = BaseStats;
+            
+            Inventory.LeftHand?.GetEquippableFeature()?.ApplyStatModifiers(ref s);
+            
+            if (Inventory.RightHand != null && Inventory.RightHand != Inventory.LeftHand)
+                Inventory.RightHand.GetEquippableFeature()?.ApplyStatModifiers(ref s);
 
-        return weapon.Damage;
+            return s;
+        }
     }
 }
 

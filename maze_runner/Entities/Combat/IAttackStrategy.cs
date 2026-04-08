@@ -4,5 +4,8 @@ namespace maze_runner.Entities.Combat;
 
 public interface IAttackStrategy
 {
-    void ExecuteAttack(Entity target, IWeapon weapon, Attributes attackerStats);
+    (int Damage, int Defense) ExecuteHeavy(int baseDamage, Attributes stats);
+    (int Damage, int Defense) ExecuteLight(int baseDamage, Attributes stats);
+    (int Damage, int Defense) ExecuteMagic(int baseDamage, Attributes stats);
+    (int Damage, int Defense) ExecuteNonWeapon(Attributes stats);
 }

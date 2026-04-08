@@ -1,5 +1,4 @@
 using maze_runner.Entities;
-using maze_runner.Entities.Player;
 using maze_runner.Items.Models;
 
 namespace maze_runner.Items.Modifiers;
@@ -9,14 +8,20 @@ public class UnluckyModifier(Item item) : ItemModifier(item)
     public override string Name => $"{_innerItem.Name} (Unlucky)";
     public override string Description => $"{_innerItem.Description}";
 
-
-    private class UnluckyEquippableDecorator(IEquippable equippable) : IEquippable
+    public override IEquippable? GetEquippableFeature()
     {
-        public int RequiredHands { get => equippable.RequiredHands; set => equippable.RequiredHands = value; }
+        var baseEquippable = _innerItem.GetEquippableFeature();
+        return baseEquippable == null ? null : new UnluckyEquippableDecorator(baseEquippable);
+    }
 
-        public void ApplyStatModifiers(Player player)
+    private class UnluckyEquippableDecorator(IEquippable inner) : IEquippable
+    {
+        public int RequiredHands { get => inner.RequiredHands; set => inner.RequiredHands = value; }
+
+        public void ApplyStatModifiers(ref Attributes stats)
         {
-            
+            inner.ApplyStatModifiers(ref stats);
+            stats.Luck -= 5;
         }
     }
 }

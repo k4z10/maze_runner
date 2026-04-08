@@ -1,3 +1,6 @@
+using maze_runner.Entities;
+using maze_runner.Entities.Combat;
+
 namespace maze_runner.Items.Modifiers;
 using Models;
 
@@ -14,7 +17,10 @@ public class SharpnessModifier(Item item) : ItemModifier(item)
 
     private class SharpnessWeaponDecorator(IWeapon inner) : IWeapon
     {
-        public int Damage => inner.Damage + 5;
-        public int RequiredHands { get => inner.RequiredHands; set => inner.RequiredHands = value; }
+        public int BaseDamage => inner.BaseDamage + 5;
+        public int RequiredHands { get => inner.RequiredHands; set => inner.RequiredHands = value; } 
+        public (int Damage, int Defense) ResolveCombat(int effectiveDamage, IAttackStrategy strategy, Attributes stats)
+            => inner.ResolveCombat(effectiveDamage, strategy, stats);
+        public void ApplyStatModifiers(Attributes stats) { }
     }
 }

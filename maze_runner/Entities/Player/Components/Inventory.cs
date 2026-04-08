@@ -8,12 +8,13 @@ public class Inventory
 {
     public ObservableCollection<Item> Items = new();
     public int CurrentIndex = 0;
-    
+
     public int Gold { get; set; }
     public int Coins { get; set; }
 
-    public Item? LeftHand = null;
-    public Item? RightHand = null;
+    public Item? LeftHand { get; private set; }
+    public Item? RightHand { get; private set; }
+
 
     public bool TryEquip(Item item)
     {
@@ -26,35 +27,69 @@ public class Inventory
 
             LeftHand = item;
             RightHand = item;
-            Items.Remove(item);
+            RemoveItemSafe(item);
             return true;
         }
-        if (RightHand != null) return false;
-        
-        RightHand = item;
-        Items.Remove(item);
+
+        if (RightHand == null)
+        {
+            RightHand = item;
+        }
+        else if (LeftHand == null)
+        {
+            LeftHand = item;
+        }
+        else
+        {
+            return false;
+        }
+
+        RemoveItemSafe(item);
         return true;
     }
-    
+
     public bool TryUnequip(Item item)
     {
         var equippable = item.GetEquippableFeature();
         if (equippable == null) return false;
-        
+
         if (equippable.RequiredHands == 2)
         {
-            if (LeftHand != item || RightHand != item)
-                return false;
+            if (LeftHand != item || RightHand != item) return false;
+
             LeftHand = null;
             RightHand = null;
             Items.Add(item);
             return true;
         }
-        if (RightHand != item)
+
+        if (RightHand == item)
+        {
+            RightHand = null;
+        }
+        else if (LeftHand == item)
+        {
+            LeftHand = null;
+        }
+        else
+        {
             return false;
-        
-        RightHand = null;
+        }
+
         Items.Add(item);
         return true;
+    }
+
+    private void RemoveItemSafe(Item item)
+    {
+        int index = Items.IndexOf(item);
+        if (index != -1)
+        {
+            Items.RemoveAt(index);
+            if (CurrentIndex >= Items.Count && CurrentIndex > 0)
+            {
+                CurrentIndex--;
+            }
+        }
     }
 }
