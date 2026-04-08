@@ -141,6 +141,9 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             
             _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(prototype.Clone()));
         }
+        var rC = _spawnableCords[_random.Next(_spawnableCords.Count)];
+        _map.GetTile(rC.Item2, rC.Item1).AddItem(new KnowledgeModifier(new Feather()));
+        
 
         _inputHandler.RegisterCommand(Key.E, new PickUp(), "Pick item from the ground");
         _inputHandler.RegisterCommand(Key.Q, new Drop(), "Drop selected item from inventory");
