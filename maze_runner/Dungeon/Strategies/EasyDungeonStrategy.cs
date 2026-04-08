@@ -11,7 +11,7 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
     {
         var builder = new ProcDungeonBuilder();
         var ctx = builder.CreateFullDungeon(width, height)
-            .AddCentralRoom(5, 3)
+            .AddCentralRoom(5, 3, true)
             .AddStartingRoom()
             .AddRooms(10)
             .ConnectRooms()

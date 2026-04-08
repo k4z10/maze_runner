@@ -1,11 +1,14 @@
+using maze_runner.Entities;
+
 namespace maze_runner.Dungeon.Map;
 using System.Text;
-public class Map(int rows, int cols)
+public class Map(int rows = 0, int cols = 0)
 {
     public readonly int Rows = rows;
     public readonly int Cols = cols;
     
     private readonly Tile[,] _tiles = new Tile[rows, cols];
+    private HashSet<Entity> _entities = new();
     
 
     private static readonly WallTile OutOfBounds = new WallTile();
@@ -24,6 +27,9 @@ public class Map(int rows, int cols)
     }
 
     public (int row, int col) GetSpawningPosition() => (0, 0);
+    
+    public bool RegisterEntity(Entity entity) => _entities.Add(entity);
+    public bool RemoveEntity(Entity entity) => _entities.Remove(entity);
 
     public override string ToString()
     {
@@ -34,6 +40,12 @@ public class Map(int rows, int cols)
                 sb.Append(_tiles[i,j].GetTileSymbol());
             sb.AppendLine();
         }
+
+        foreach (var entity in _entities)
+        {
+            sb[entity.Position.Row * (Cols + 1) + entity.Position.Col] = entity.Symbol; 
+        }
+        
         return sb.ToString();
     }
 }

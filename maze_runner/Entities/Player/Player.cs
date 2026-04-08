@@ -4,6 +4,7 @@ namespace maze_runner.Entities.Player;
 
 public class Player : Entity
 {
+    public override int MaxHealth { get; protected set; } = 100;
     public readonly Inventory Inventory = new();
 
     public override Attributes CurrentStats
@@ -20,6 +21,7 @@ public class Player : Entity
             return s;
         }
     }
+    public override char Symbol => '@';
 }
 
 

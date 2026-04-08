@@ -1,5 +1,6 @@
 using maze_runner.Commands.Core;
 using maze_runner.Commands.Player;
+using maze_runner.Entities.Mobs;
 using maze_runner.Items.Modifiers;
 using Terminal.Gui;
 
@@ -11,7 +12,7 @@ using Map;
 
 public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
 {
-    private Map _map;
+    private Map _map = new();
     private readonly List<Room> _rooms = new();
     private Random _random = new();
     private List<(int, int)> _spawnableCords = new();
@@ -59,7 +60,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         return this;
     }
 
-    public IModifierDungeonBuilder AddCentralRoom(int width, int height)
+    public IModifierDungeonBuilder AddCentralRoom(int width, int height, bool secure)
     {
         int x = (_map.Cols - width) / 2;
         int y = (_map.Rows - height) / 2;
@@ -67,6 +68,11 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         var central = new Room(x, y, width, height);
         CraveRoom(central);
         _rooms.Add(central);
+
+        var boss = new MainBoss();
+        boss.Position = ((_map.Rows - 1) / 2, (_map.Cols - 1) / 2);
+        _map.RegisterEntity(boss);
+        
         return this;
     }
 
