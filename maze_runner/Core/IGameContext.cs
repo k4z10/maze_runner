@@ -4,5 +4,5 @@ using Dungeon.Map;
 public interface IGameContext
 {
     Entities.Player.Player Player { get; }
-    Map Map { get; }
+    Map CurrentMap { get; }
 }

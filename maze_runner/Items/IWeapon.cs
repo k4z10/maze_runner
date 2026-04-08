@@ -5,7 +5,7 @@ using Entities;
 
 public interface IWeapon
 {
-    int BaseDamage { get; }
+    int Damage { get; }
     int RequiredHands { get; set; }
     (int Damage, int Defense) ResolveCombat(int effectiveDamage, IAttackStrategy strategy, Attributes stats);
 }

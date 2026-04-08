@@ -8,7 +8,7 @@ using Dungeon.Map;
 public class GameEngine : IGameContext
 {
     public Entities.Player.Player Player { get; }
-    public Map Map { get; private set; }
+    public Map CurrentMap { get; private set; }
     private LevelContext _currentLevelContext;
 
     private Window _mainWindow      = new();
@@ -35,7 +35,8 @@ public class GameEngine : IGameContext
     {
         var ctx = strategy.Generate(width, height);
         _currentLevelContext = ctx;
-        Map = ctx.Map;
+        CurrentMap = ctx.Map;
+        CurrentMap.RegisterEntity(Player);
         Player.Position = (0, 0);
     }
 
@@ -43,7 +44,7 @@ public class GameEngine : IGameContext
     {
         var ctx = new InitialDungeonStrategy().Generate(40, 20);
         _currentLevelContext = ctx;
-        Map = ctx.Map;
+        CurrentMap = ctx.Map;
         Player = player;
     }
 
@@ -110,8 +111,8 @@ public class GameEngine : IGameContext
         {
             X = 0,
             Y = 0,
-            Width = Map.Cols + 2,
-            Height = Map.Rows + 2,
+            Width = CurrentMap.Cols + 2,
+            Height = CurrentMap.Rows + 2,
             Title = " Map ",
             BorderStyle = LineStyle.Single
         };
@@ -121,7 +122,7 @@ public class GameEngine : IGameContext
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            Text = Map.ToString(),
+            Text = CurrentMap.ToString(),
         };
         // info overlay na temat zawartości kafelka
         _tileInfoOverlay = new View()
@@ -181,11 +182,12 @@ public class GameEngine : IGameContext
         handsFrame.Add(leftHandFrame, rightHandFrame);
 
         // Inventory.Items Frame
+        var attributesFrameWidth = 21;
         var itemsFrame = new View()
         {
             X = 0,
             Y = Pos.Bottom(handsFrame),
-            Width = Dim.Percent(50),
+            Width = Dim.Fill() - attributesFrameWidth,
             Height = 8,
             Title = " Inventory ",
             BorderStyle = LineStyle.Rounded
@@ -251,8 +253,8 @@ public class GameEngine : IGameContext
         {
             X = Pos.Right(itemsFrame),
             Y = Pos.Bottom(handsFrame),
-            Width = Dim.Percent(50),
-            Height = Dim.Height(itemsFrame),
+            Width = attributesFrameWidth,
+            Height = Dim.Fill(),
             Title = " Attributes ",
             BorderStyle = LineStyle.Rounded
         };
@@ -260,12 +262,13 @@ public class GameEngine : IGameContext
         attributesFrame.Add(_attributesLabel);
         
         // Money Frame
+        var monyFrameWidth = 12;
         var accountFrame = new View()
         {
             X = 0,
             Y = Pos.Bottom(itemsFrame),
-            Width = Dim.Fill(),
-            Height = 4,
+            Width = monyFrameWidth,
+            Height = Dim.Fill(),
             Title = " Bundle ",
             BorderStyle = LineStyle.Rounded
         };
@@ -322,15 +325,8 @@ public class GameEngine : IGameContext
 
     private void MapDisplay()
     {
-        var sb = new StringBuilder(Map.ToString());
-        sb[Player.Position.Row * (Map.Cols + 1) + Player.Position.Col] = '@'; 
-        _mapLabel.Text = sb.ToString();
-        
-        if (Map.GetTile(Player.Position.Row, Player.Position.Col).Items.Any())
-        {
-            
-        }
-    }
+        _mapLabel.Text = CurrentMap.ToString();        
+    } 
 
     private void InventoryDisplay()
     {
@@ -347,7 +343,8 @@ public class GameEngine : IGameContext
         
         _accountLabel.Text = $"Gold:  {Player.Inventory.Gold}\n" +
                              $"Coins: {Player.Inventory.Coins}";
-        _attributesLabel.Text = $"Health:     {Player.CurrentStats.Dexterity}\n" +
+        _attributesLabel.Text = $"Health:     {Player.Health}/{Player.MaxHealth}\n" +
+                                $"Dexterity:  {Player.CurrentStats.Dexterity}\n" +
                                 $"Stamina:    {Player.CurrentStats.Stamina}\n" +
                                 $"Strength:   {Player.CurrentStats.Strength}\n" +
                                 $"Resistance: {Player.CurrentStats.Resistance}\n" +
@@ -357,7 +354,7 @@ public class GameEngine : IGameContext
 
     private void TileInfoOverlay()
     {
-        var currentTile = Map.GetTile(Player.Position.Row, Player.Position.Col);
+        var currentTile = CurrentMap.GetTile(Player.Position.Row, Player.Position.Col);
         if (currentTile.Items.Any() && _itemInfoToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
@@ -370,7 +367,7 @@ public class GameEngine : IGameContext
             if (terminalY < 0) terminalY = Player.Position.Row + 1;
             if (terminalX < 0) terminalX = 0;
 
-            if (terminalX + TileInfoWidth > Map.Cols)
+            if (terminalX + TileInfoWidth > CurrentMap.Cols)
             {
                 terminalX = Player.Position.Col - TileInfoWidth - 1;
                 if (terminalX < 0) terminalX = 0;
@@ -417,7 +414,7 @@ public class GameEngine : IGameContext
         {
             text += $"""
                     
-                    Damage: {weaponFeature.BaseDamage}
+                    Damage: {weaponFeature.Damage}
                     Weight: {(weaponFeature.RequiredHands == 1 ? "Light" :"Heavy")}
                     """;
         }

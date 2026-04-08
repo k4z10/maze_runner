@@ -1,5 +1,6 @@
 using maze_runner.Commands.Core;
 using maze_runner.Commands.Player;
+using maze_runner.Entities.Combat;
 using maze_runner.Entities.Mobs;
 using maze_runner.Items.Modifiers;
 using Terminal.Gui;
@@ -34,10 +35,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             for (int y = 0; y < height; y++)
                 _spawnableCords.Add((x, y));
         
-        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0));
-        _inputHandler.RegisterCommand(Key.S, new Move(1, 0));
-        _inputHandler.RegisterCommand(Key.A, new Move(0, -1));
-        _inputHandler.RegisterCommand(Key.D, new Move(0, 1));
+        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0), "Move up");
+        _inputHandler.RegisterCommand(Key.S, new Move(1, 0), "Move down");
+        _inputHandler.RegisterCommand(Key.A, new Move(0, -1), "Move left");
+        _inputHandler.RegisterCommand(Key.D, new Move(0, 1), "Move right");
         
         return this;
     }
@@ -52,10 +53,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         
         _spawnableCords.Clear();
         
-        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0));
-        _inputHandler.RegisterCommand(Key.S, new Move(1, 0));
-        _inputHandler.RegisterCommand(Key.A, new Move(0, -1));
-        _inputHandler.RegisterCommand(Key.D, new Move(0, 1));
+        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0), "Move up");
+        _inputHandler.RegisterCommand(Key.S, new Move(1, 0), "Move down");
+        _inputHandler.RegisterCommand(Key.A, new Move(0, -1), "Move left");
+        _inputHandler.RegisterCommand(Key.D, new Move(0, 1), "Move right");
         
         return this;
     }
@@ -72,6 +73,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         var boss = new MainBoss();
         boss.Position = ((_map.Rows - 1) / 2, (_map.Cols - 1) / 2);
         _map.RegisterEntity(boss);
+        
+        _inputHandler.RegisterCommand(KeyCode.Z, new Attack(new NormalAttack()), "Perform -normal- attack");
+        _inputHandler.RegisterCommand(KeyCode.X, new Attack(new StealthAttack()), "Perform -stealth- attack");
+        _inputHandler.RegisterCommand(KeyCode.C, new Attack(new MagicAttack()), "Perform -magic- attack");
         
         return this;
     }
@@ -117,10 +122,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(new SharpnessModifier(prototype.Clone())));
         }
 
-        _inputHandler.RegisterCommand(Key.E, new PickUp());
-        _inputHandler.RegisterCommand(Key.Q, new Drop());
-        _inputHandler.RegisterCommand(Key.F, new Equip());
-        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip());
+        _inputHandler.RegisterCommand(Key.E, new PickUp(), "Pick item from the ground");
+        _inputHandler.RegisterCommand(Key.Q, new Drop(), "Drop selected item from inventory");
+        _inputHandler.RegisterCommand(Key.F, new Equip(), "Equip selected item");
+        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip(), "Unequip item (from Hands)");
         
         return this;
     }
@@ -135,10 +140,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(prototype.Clone());
         }
 
-        _inputHandler.RegisterCommand(Key.E, new PickUp());
-        _inputHandler.RegisterCommand(Key.Q, new Drop());
-        _inputHandler.RegisterCommand(Key.F, new Equip());
-        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip());
+        _inputHandler.RegisterCommand(Key.E, new PickUp(), "Pick item from the ground");
+        _inputHandler.RegisterCommand(Key.Q, new Drop(), "Drop selected item from inventory");
+        _inputHandler.RegisterCommand(Key.F, new Equip(), "Equip selected item");
+        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip(), "Unequip item (from Hands)");
         
         return this;
     }

@@ -5,8 +5,6 @@ using Core;
 
 public class Drop : ICommand
 {
-    public string Description { get; } = "Drop item from inventory";
-
     public bool CanExecute(IGameContext context)
     {
         var inventory = context.Player.Inventory;
@@ -17,7 +15,7 @@ public class Drop : ICommand
     public void Execute(IGameContext context)
     {
         var inventory = context.Player.Inventory;
-        var currentTile = context.Map.GetTile(context.Player.Position.Row, context.Player.Position.Col);
+        var currentTile = context.CurrentMap.GetTile(context.Player.Position.Row, context.Player.Position.Col);
         
         switch (inventory.CurrentIndex)
         {

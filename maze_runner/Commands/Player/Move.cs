@@ -19,7 +19,7 @@ public class Move : ICommand
         int targetX = ctx.Player.Position.Row + _dx;
         int targetY = ctx.Player.Position.Col + _dy;
         
-        return ctx.Map.GetTile(targetX, targetY).TryEnter(ctx.Player);
+        return ctx.CurrentMap.GetTile(targetX, targetY).TryEnter(ctx.Player);
     }
 
     public void Execute(IGameContext ctx)
@@ -29,6 +29,4 @@ public class Move : ICommand
         
         ctx.Player.Position = (newX, newY);
     }
-
-    public string Description { get; } = "Move player";
 }

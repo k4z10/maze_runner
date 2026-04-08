@@ -8,8 +8,8 @@ public class Map(int rows = 0, int cols = 0)
     public readonly int Cols = cols;
     
     private readonly Tile[,] _tiles = new Tile[rows, cols];
-    private HashSet<Entity> _entities = new();
-    
+    private List<Entity> _entities = new();
+
 
     private static readonly WallTile OutOfBounds = new WallTile();
     public Tile GetTile(int row, int col)
@@ -28,8 +28,12 @@ public class Map(int rows = 0, int cols = 0)
 
     public (int row, int col) GetSpawningPosition() => (0, 0);
     
-    public bool RegisterEntity(Entity entity) => _entities.Add(entity);
+    public void RegisterEntity(Entity entity) => _entities.Add(entity);
     public bool RemoveEntity(Entity entity) => _entities.Remove(entity);
+
+    public Entity? GetEntity(int row, int col) 
+        => _entities.FirstOrDefault(entity => entity.Position.Row == row && entity.Position.Col == col);
+
 
     public override string ToString()
     {
@@ -43,7 +47,7 @@ public class Map(int rows = 0, int cols = 0)
 
         foreach (var entity in _entities)
         {
-            sb[entity.Position.Row * (Cols + 1) + entity.Position.Col] = entity.Symbol; 
+            sb[entity.Position.Row * (Cols + 1) + entity.Position.Col] = entity.Symbol;
         }
         
         return sb.ToString();

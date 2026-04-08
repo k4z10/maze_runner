@@ -20,30 +20,56 @@ public class Inventory
     {
         var equippable = item.GetEquippableFeature();
         if (equippable == null) return false;
-
+        
         if (equippable.RequiredHands == 2)
         {
-            if (LeftHand != null || RightHand != null) return false;
+            var tmp = RightHand?.GetEquippableFeature();
+            if (tmp != null)
+            {
+                // Swap mechanic for 2-hand weapons
+                if (tmp.RequiredHands == 2)
+                {
+                    TryUnequip(RightHand!);
+                }
+                else
+                {
+                    TryUnequip(RightHand!);
+                    if (LeftHand != null)
+                        TryUnequip(LeftHand);
+                }
+            }
 
             LeftHand = item;
             RightHand = item;
             RemoveItemSafe(item);
             return true;
         }
-
+        
+        // Weapon always in right hand
+        var weapon = item.GetWeaponFeature();
+        if (weapon != null)
+        {
+            if (RightHand == null)
+                RightHand = item;
+            else
+            {
+                var tmp = RightHand;
+                TryUnequip(tmp);
+                RightHand = item;
+            }
+            RemoveItemSafe(item);
+            return true;
+        }
+        
+        // For anything else (first slot available)
         if (RightHand == null)
         {
             RightHand = item;
+            RemoveItemSafe(item);
+            return true;     
         }
-        else if (LeftHand == null)
-        {
-            LeftHand = item;
-        }
-        else
-        {
-            return false;
-        }
-
+        if (LeftHand != null) return false;
+        LeftHand = item;
         RemoveItemSafe(item);
         return true;
     }
@@ -62,20 +88,12 @@ public class Inventory
             Items.Add(item);
             return true;
         }
-
-        if (RightHand == item)
-        {
-            RightHand = null;
-        }
-        else if (LeftHand == item)
-        {
+        
+        if (LeftHand == item)
             LeftHand = null;
-        }
-        else
-        {
-            return false;
-        }
-
+        if (RightHand == item)
+            RightHand = null;
+        
         Items.Add(item);
         return true;
     }

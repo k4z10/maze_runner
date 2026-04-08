@@ -5,8 +5,6 @@ namespace maze_runner.Commands.Player;
 
 public class Equip : ICommand
 {
-    public string Description { get; } = "Equip an item";
-
     public bool CanExecute(IGameContext context)
     {
         var inventory = context.Player.Inventory;

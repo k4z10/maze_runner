@@ -2,9 +2,8 @@ using maze_runner.Entities.Player.Components;
 
 namespace maze_runner.Entities.Player;
 
-public class Player : Entity
+public class Player() : Entity(100)
 {
-    public override int MaxHealth { get; protected set; } = 100;
     public readonly Inventory Inventory = new();
 
     public override Attributes CurrentStats

@@ -8,13 +8,13 @@ public class PickUp : ICommand
     public bool CanExecute(IGameContext ctx)
     {
         var (x, y) = ctx.Player.Position;
-        return ctx.Map.GetTile(x, y).Items.Count > 0;
+        return ctx.CurrentMap.GetTile(x, y).Items.Count > 0;
     }
 
     public void Execute(IGameContext ctx)
     {
         var (x, y) = ctx.Player.Position;
-        var item = ctx.Map.GetTile(x, y).PopItem();
+        var item = ctx.CurrentMap.GetTile(x, y).PopItem();
         if (item == null)
             return;
         
@@ -31,6 +31,4 @@ public class PickUp : ICommand
             ctx.Player.Inventory.Items.Add(item);
         }
     }
-
-    public string Description { get; } = "Pick up item form current tile";
 }
