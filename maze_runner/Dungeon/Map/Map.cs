@@ -1,6 +1,6 @@
-using maze_runner.Entities;
-
 namespace maze_runner.Dungeon.Map;
+using Entities;
+using Entities.Player;
 using System.Text;
 public class Map(int rows = 0, int cols = 0)
 {
@@ -31,8 +31,11 @@ public class Map(int rows = 0, int cols = 0)
     public void RegisterEntity(Entity entity) => _entities.Add(entity);
     public bool RemoveEntity(Entity entity) => _entities.Remove(entity);
 
-    public Entity? GetEntity(int row, int col) 
-        => _entities.FirstOrDefault(entity => entity.Position.Row == row && entity.Position.Col == col);
+    public Entity? GetEntity(Player player)
+        => _entities.FirstOrDefault(entity => entity.Position.Row == player.Position.Row &&
+                                              entity.Position.Col == player.Position.Col &&
+                                              entity != player
+                                              );
 
 
     public override string ToString()

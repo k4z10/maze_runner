@@ -12,7 +12,7 @@ public class Attack(IAttackStrategy attackType) : ICommand
     public void Execute(IGameContext context)
     {
         var player = context.Player;
-        var enemy = context.CurrentMap.GetEntity(player.Position.Row, player.Position.Col);
+        var enemy = context.CurrentMap.GetEntity(player);
         if (enemy == null) return;
         
         var weapon = player.Inventory.RightHand?.GetWeaponFeature();

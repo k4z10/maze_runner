@@ -1,16 +1,17 @@
+using System.ComponentModel.Design;
+using maze_runner.Core.Engine.Commands;
 using maze_runner.Dungeon.Strategies;
 using maze_runner.Items.Models;
 
-namespace maze_runner.Core;
-using System.Text;
+namespace maze_runner.Core.Engine;
+using Commands.Core;
 using Terminal.Gui;
-using Dungeon.Map;
-public class GameEngine : IGameContext
-{
-    public Entities.Player.Player Player { get; }
-    public Map CurrentMap { get; private set; }
-    private LevelContext _currentLevelContext;
+using System.Text;
 
+public class TerminalUIManager : IGameUIManager
+{
+    private readonly GameEngine _engine;
+    private readonly InputHandler _engineInputHandler;
     private Window _mainWindow      = new();
     private Label _mapLabel         = new();
     private Label _leftHandLabel    = new();
@@ -23,32 +24,24 @@ public class GameEngine : IGameContext
     private TextView _tileInfoTextView  = new();
     private TextView _tooltipTextView   = new ();
     private View _itemTooltipOverlay    = new();
-    private const int TileInfoWidth     = 15;
-    private const int TileInfoHeight    = 5;
-    private int _itemInfoToggle = 0;
 
     private View _howToPlayOverlay = new();
     private TextView _howToPlayTextView = new();
+    
+    private const int TileInfoWidth     = 15;
+    private const int TileInfoHeight    = 5;
+    
+    private int _itemInfoToggle = 0;
     private int _howToPlayOverlayToggle = 1;
 
-    public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)
+    public TerminalUIManager(GameEngine engine, InputHandler inputHandler)
     {
-        var ctx = strategy.Generate(width, height);
-        _currentLevelContext = ctx;
-        CurrentMap = ctx.Map;
-        CurrentMap.RegisterEntity(Player);
-        Player.Position = (0, 0);
+        _engine = engine;
+        _engineInputHandler = inputHandler;
     }
 
-    public GameEngine(Entities.Player.Player player)
-    {
-        var ctx = new InitialDungeonStrategy().Generate(40, 20);
-        _currentLevelContext = ctx;
-        CurrentMap = ctx.Map;
-        Player = player;
-    }
 
-    public void Run()
+    public void InitializeAndRun()
     {
         Application.Init();
 
@@ -70,6 +63,11 @@ public class GameEngine : IGameContext
             ColorScheme = scheme,
         };
         
+        _engineInputHandler.RegisterCommand('?', new ToggleHelp(), "Toggle help menu");
+        _engineInputHandler.RegisterCommand(Key.Esc, new Quit(), "Quit game");
+        _engineInputHandler.RegisterCommand('i', new ToggleItemInfo(), "Toggle in-game info overlay");
+        _engineInputHandler.RegisterCommand(Key.Tab, new Reload(), "Reload game");
+        
         
         BuildUI();
         
@@ -81,10 +79,154 @@ public class GameEngine : IGameContext
         Application.Run(_mainWindow);
         
         _mainWindow.Dispose();
-        Application.Shutdown();
+        Application.Shutdown();        
     }
 
-    private void BuildUI()
+    public void Render()
+    {
+        MapDisplay();
+        InventoryDisplay();
+        _mainWindow.SetNeedsDraw();
+    }
+    
+    public void ToggleItemInfo() => _itemInfoToggle ^= 1;
+    public void ToggleHelp() => _howToPlayOverlayToggle ^= 1;
+    public void Quit() => Application.RequestStop();
+    public void Reload() => _engine.LoadLevel(new EasyDungeonStrategy());
+
+    private void HandleKeyboard(object sender, Key e)
+    {
+        _engineInputHandler.ProcessInput(e.KeyCode, this);
+        _engine.CurrentLevelContext.InputHandler.ProcessInput(e.KeyCode, _engine);
+        
+        HowToPlayOverlay();
+        TileInfoOverlay();
+        ItemInfoOverlay();
+        e.Handled = true;
+        Render();
+    }
+    
+    private void HandleMouse(object sender, MouseEventArgs args)
+    {
+        if (args.IsSingleClicked)
+        {
+            int targetX = args.Position.X;
+            int targetY = args.Position.Y;
+        }
+        else if ((args.Flags & MouseFlags.WheeledUp) != 0)
+        {
+        }
+
+        args.Handled = true;
+    }
+    
+    private void MapDisplay() => _mapLabel.Text = _engine.CurrentMap.ToString();        
+    private void InventoryDisplay()
+    {
+        _leftHandLabel.Text = _engine.Player.Inventory.LeftHand == null
+            ? " "
+            : $"{_engine.Player.Inventory.LeftHand.Name}({_engine.Player.Inventory.LeftHand.TileSymbol})";
+        _rightHandLabel.Text = _engine.Player.Inventory.RightHand == null 
+            ? " " 
+            : $"{_engine.Player.Inventory.RightHand.Name}({_engine.Player.Inventory.RightHand.TileSymbol})";
+
+        var sb = new StringBuilder();
+        foreach (var item in _engine.Player.Inventory.Items)
+            sb.AppendLine($"{item.Name}({item.TileSymbol})");
+        
+        _accountLabel.Text = $"Gold:  {_engine.Player.Inventory.Gold}\n" +
+                             $"Coins: {_engine.Player.Inventory.Coins}";
+        _attributesLabel.Text = $"Health:     {_engine.Player.Health}/{_engine.Player.MaxHealth}\n" +
+                                $"Dexterity:  {_engine.Player.CurrentStats.Dexterity}\n" +
+                                $"Stamina:    {_engine.Player.CurrentStats.Stamina}\n" +
+                                $"Strength:   {_engine.Player.CurrentStats.Strength}\n" +
+                                $"Resistance: {_engine.Player.CurrentStats.Resistance}\n" +
+                                $"Luck:       {_engine.Player.CurrentStats.Luck}\n" +
+                                $"Wisdom:     {_engine.Player.CurrentStats.Wisdom}";
+    }
+    
+    private void TileInfoOverlay()
+    {
+        var currentTile = _engine.CurrentMap.GetTile(_engine.Player.Position.Row, _engine.Player.Position.Col);
+        if (currentTile.Items.Any() && _itemInfoToggle == 1)
+        {
+            _tileInfoTextView.Text = string.Empty;
+            foreach (var item in currentTile.Items)
+                _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
+
+            var terminalX = _engine.Player.Position.Col - TileInfoWidth / 2;
+            var terminalY = _engine.Player.Position.Row - TileInfoHeight;
+
+            if (terminalY < 0) terminalY = _engine.Player.Position.Row + 1;
+            if (terminalX < 0) terminalX = 0;
+
+            if (terminalX + TileInfoWidth > _engine.CurrentMap.Cols)
+            {
+                terminalX = _engine.Player.Position.Col - TileInfoWidth - 1;
+                if (terminalX < 0) terminalX = 0;
+            }
+            
+            _tileInfoOverlay.X = terminalX;
+            _tileInfoOverlay.Y = terminalY;
+
+            if (!_tileInfoOverlay.Visible)
+                _tileInfoOverlay.Visible = true;
+            _tileInfoOverlay.SetNeedsDraw();
+        }
+        else
+        {
+            if (_tileInfoOverlay.Visible)
+            {
+                _tileInfoOverlay.Visible = false;
+                // _mapLabel.SetNeedsDraw();
+            }
+        }
+    }
+    
+    private void ItemInfoOverlay() => _itemTooltipOverlay.Visible = _itemInfoToggle != 0;
+    private void ItemInfoWrite(Item item)
+    {
+        var selectedItem = item;
+        string text = $"""
+                       ({item.TileSymbol}) {item.Name}
+                       {item.Description}
+                       """;
+        var weaponFeature = item.GetWeaponFeature();
+        if (weaponFeature != null)
+        {
+            text += $"""
+
+                     Damage: {weaponFeature.Damage}
+                     Weight: {(weaponFeature.RequiredHands == 1 ? "Light" :"Heavy")}
+                     """;
+        }
+        
+        _tooltipTextView.Text = text;
+    }
+
+    private void HowToPlayOverlay()
+    {
+        if (_howToPlayOverlayToggle == 1)
+        {
+            var sb = new StringBuilder();
+            
+            sb.AppendLine("Level name: " + _engine.CurrentLevelContext.LevelName);
+            sb.AppendLine(_engine.CurrentLevelContext.Description);
+            sb.AppendLine();
+            sb.AppendLine("1. General\n" + _engineInputHandler.ToString());
+            sb.AppendLine();
+            sb.AppendLine("2. Ingame actions\n" + _engine.CurrentLevelContext.InputHandler.ToString());
+            
+            _howToPlayTextView.Text = sb.ToString();
+            _howToPlayOverlay.Visible = true;
+        }
+        else
+        {
+            _howToPlayOverlay.Visible = false;
+        }
+    }
+
+    void BuildUI()
     {
         _howToPlayOverlay = new View()
         {
@@ -111,8 +253,8 @@ public class GameEngine : IGameContext
         {
             X = 0,
             Y = 0,
-            Width = CurrentMap.Cols + 2,
-            Height = CurrentMap.Rows + 2,
+            Width = _engine.CurrentMap.Cols + 2,
+            Height = _engine.CurrentMap.Rows + 2,
             Title = " Map ",
             BorderStyle = LineStyle.Single
         };
@@ -122,7 +264,7 @@ public class GameEngine : IGameContext
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            Text = CurrentMap.ToString(),
+            Text = _engine.CurrentMap.ToString(),
         };
         // info overlay na temat zawartości kafelka
         _tileInfoOverlay = new View()
@@ -211,10 +353,10 @@ public class GameEngine : IGameContext
         _tooltipTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), WordWrap = true, ReadOnly = true };
         _itemTooltipOverlay.Add(_tooltipTextView);
         
-        _itemsListView.SetSource(Player.Inventory.Items);
+        _itemsListView.SetSource(_engine.Player.Inventory.Items);
         _itemsListView.CollectionChanged += (_, args) =>
         {
-            var items = Player.Inventory.Items;
+            var items = _engine.Player.Inventory.Items;
             if (items.Count <= 0)
             {
                 _tooltipTextView.Text = string.Empty;
@@ -222,16 +364,16 @@ public class GameEngine : IGameContext
                 return;
             }
 
-            if (args.OldStartingIndex == Player.Inventory.CurrentIndex)
+            if (args.OldStartingIndex == _engine.Player.Inventory.CurrentIndex)
             {
-                ItemInfoWrite(items[Player.Inventory.CurrentIndex]);
+                ItemInfoWrite(items[_engine.Player.Inventory.CurrentIndex]);
             }
-            if (args.NewStartingIndex == Player.Inventory.CurrentIndex)
-                ItemInfoWrite(items[Player.Inventory.CurrentIndex]);
+            if (args.NewStartingIndex == _engine.Player.Inventory.CurrentIndex)
+                ItemInfoWrite(items[_engine.Player.Inventory.CurrentIndex]);
         };
         _itemsListView.SelectedItemChanged += (_, args) =>
         {
-            Player.Inventory.CurrentIndex = args.Item;
+            _engine.Player.Inventory.CurrentIndex = args.Item;
             ItemInfoWrite((Item)args.Value);
         };
         _itemsListView.RowRender += (_, args) =>
@@ -240,9 +382,9 @@ public class GameEngine : IGameContext
                                 new Attribute(Color.Black, Color.White) :
                                 new Attribute(Color.White, Color.Black);
         };
-        Player.Inventory.Items.CollectionChanged += (_, _) =>
+        _engine.Player.Inventory.Items.CollectionChanged += (_, _) =>
         {
-            if (Player.Inventory.Items.Count != 1) return;
+            if (_engine.Player.Inventory.Items.Count != 1) return;
             _itemsListView.SelectedItem = 0;
         };
         
@@ -280,170 +422,5 @@ public class GameEngine : IGameContext
         inventoryFrame.Add(handsFrame, itemsFrame, attributesFrame, accountFrame);
         
         _mainWindow.Add(mapFrame, inventoryFrame, _howToPlayOverlay); // _howToPlayOverlay always at the end.
-    }
-
-    private void HandleKeyboard(object sender, Key e)
-    {
-        switch (e.KeyCode)
-        {
-            case KeyCode.Tab: LoadLevel(new EasyDungeonStrategy()); break;
-            case KeyCode.I: _itemInfoToggle ^= 1; break;
-            case (KeyCode)'?': _howToPlayOverlayToggle ^= 1; break;
-            case KeyCode.Esc: Application.RequestStop(); break;
-            default:
-                _currentLevelContext.InputHandler.ProcessInput((KeyCode)e, this);
-                break;
-        }
-        
-        HowToPlayOverlay();
-        TileInfoOverlay();
-        ItemInfoOverlay();
-        e.Handled = true;
-        Render();
-    }
-
-    private void HandleMouse(object sender, MouseEventArgs args)
-    {
-        if (args.IsSingleClicked)
-        {
-            int targetX = args.Position.X;
-            int targetY = args.Position.Y;
-        }
-        else if ((args.Flags & MouseFlags.WheeledUp) != 0)
-        {
-        }
-
-        args.Handled = true;
-    }
-
-    private void Render()
-    {
-        MapDisplay();
-        InventoryDisplay();
-        _mainWindow.SetNeedsDraw();
-    }
-
-    private void MapDisplay()
-    {
-        _mapLabel.Text = CurrentMap.ToString();        
-    } 
-
-    private void InventoryDisplay()
-    {
-        _leftHandLabel.Text = Player.Inventory.LeftHand == null
-            ? " "
-            : $"{Player.Inventory.LeftHand.Name}({Player.Inventory.LeftHand.TileSymbol})";
-        _rightHandLabel.Text = Player.Inventory.RightHand == null 
-            ? " " 
-            : $"{Player.Inventory.RightHand.Name}({Player.Inventory.RightHand.TileSymbol})";
-
-        var sb = new StringBuilder();
-        foreach (var item in Player.Inventory.Items)
-            sb.AppendLine($"{item.Name}({item.TileSymbol})");
-        
-        _accountLabel.Text = $"Gold:  {Player.Inventory.Gold}\n" +
-                             $"Coins: {Player.Inventory.Coins}";
-        _attributesLabel.Text = $"Health:     {Player.Health}/{Player.MaxHealth}\n" +
-                                $"Dexterity:  {Player.CurrentStats.Dexterity}\n" +
-                                $"Stamina:    {Player.CurrentStats.Stamina}\n" +
-                                $"Strength:   {Player.CurrentStats.Strength}\n" +
-                                $"Resistance: {Player.CurrentStats.Resistance}\n" +
-                                $"Luck:       {Player.CurrentStats.Luck}\n" +
-                                $"Wisdom:     {Player.CurrentStats.Wisdom}";
-    }
-
-    private void TileInfoOverlay()
-    {
-        var currentTile = CurrentMap.GetTile(Player.Position.Row, Player.Position.Col);
-        if (currentTile.Items.Any() && _itemInfoToggle == 1)
-        {
-            _tileInfoTextView.Text = string.Empty;
-            foreach (var item in currentTile.Items)
-                _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
-
-            var terminalX = Player.Position.Col - TileInfoWidth / 2;
-            var terminalY = Player.Position.Row - TileInfoHeight;
-
-            if (terminalY < 0) terminalY = Player.Position.Row + 1;
-            if (terminalX < 0) terminalX = 0;
-
-            if (terminalX + TileInfoWidth > CurrentMap.Cols)
-            {
-                terminalX = Player.Position.Col - TileInfoWidth - 1;
-                if (terminalX < 0) terminalX = 0;
-            }
-            
-            _tileInfoOverlay.X = terminalX;
-            _tileInfoOverlay.Y = terminalY;
-
-            if (!_tileInfoOverlay.Visible)
-                _tileInfoOverlay.Visible = true;
-            _tileInfoOverlay.SetNeedsDraw();
-        }
-        else
-        {
-            if (_tileInfoOverlay.Visible)
-            {
-                _tileInfoOverlay.Visible = false;
-                // _mapLabel.SetNeedsDraw();
-            }
-        }
-    }
-
-    private void ItemInfoOverlay()
-    {
-        if (_itemInfoToggle == 0)
-        {
-            _itemTooltipOverlay.Visible = false;
-        }
-        else
-        {
-            _itemTooltipOverlay.Visible = true;
-        }
-    }
-
-    private void ItemInfoWrite(Item item)
-    {
-        var selectedItem = item;
-        string text = $"""
-                       ({item.TileSymbol}) {item.Name}
-                       {item.Description}
-                       """;
-        var weaponFeature = item.GetWeaponFeature();
-        if (weaponFeature != null)
-        {
-            text += $"""
-                    
-                    Damage: {weaponFeature.Damage}
-                    Weight: {(weaponFeature.RequiredHands == 1 ? "Light" :"Heavy")}
-                    """;
-        }
-        
-        _tooltipTextView.Text = text;
-    }
-
-    private void HowToPlayOverlay()
-    {
-        if (_howToPlayOverlayToggle == 1)
-        {
-            var sb = new StringBuilder();
-            
-            sb.AppendLine(_currentLevelContext.LevelName);
-            sb.AppendLine(_currentLevelContext.Description);
-            sb.AppendLine();
-            sb.AppendLine(_currentLevelContext.InputHandler.ToString());
-            sb.Append($"""
-                      [{(Key)'?'}] - toggle help
-                      [{Key.I}] - toggle tile info
-                      [{Key.Tab}] - generate new level
-                      [{Key.Q}] - quit game
-                      """);
-            _howToPlayTextView.Text = sb.ToString();
-            _howToPlayOverlay.Visible = true;
-        }
-        else
-        {
-            _howToPlayOverlay.Visible = false;
-        }
     }
 }

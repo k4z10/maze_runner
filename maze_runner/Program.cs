@@ -1,7 +1,7 @@
 ﻿using maze_runner.Dungeon.Strategies;
 
 namespace maze_runner;
-using Core;
+using Core.Engine;
 
 static class Program
 {
