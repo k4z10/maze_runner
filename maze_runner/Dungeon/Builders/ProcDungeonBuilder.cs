@@ -22,7 +22,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
     private EntityManager _entityManager = new();
 
     // Add new potential items to spawn
-    private readonly IReadOnlyList<Item> _weaponsProt = [new Knife(), new LongSword(), new Sword()];
+    private readonly IReadOnlyList<Item> _weaponsProt = [new Knife(), new LongSword(), new Sword(), new Cubix()];
     private readonly IReadOnlyList<Item> _uselessItemsProt = [new Bottle(), new Feather(), new Stick()];
 
     public IModifierDungeonBuilder CreateEmptyDungeon(int width, int height)
@@ -139,7 +139,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
             var prototype = _uselessItemsProt[_random.Next(_uselessItemsProt.Count)];
             
-            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(prototype.Clone());
+            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(prototype.Clone()));
         }
 
         _inputHandler.RegisterCommand(Key.E, new PickUp(), "Pick item from the ground");
