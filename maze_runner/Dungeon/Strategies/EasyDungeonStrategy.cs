@@ -21,6 +21,6 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
 
         string levelDescription = "This is easy level.";
         
-        return new LevelContext(ctx.Item1, ctx.Item2, levelDescription, "Easy");
+        return new LevelContext(ctx.Item1, ctx.Item2, ctx.Item3, levelDescription, "Easy");
     }
 }

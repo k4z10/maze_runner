@@ -1,6 +1,7 @@
 using System.ComponentModel.Design;
 using maze_runner.Core.Engine.Commands;
 using maze_runner.Dungeon.Strategies;
+using maze_runner.Entities;
 using maze_runner.Items.Models;
 
 namespace maze_runner.Core.Engine;
@@ -12,20 +13,20 @@ public class TerminalUIManager : IGameUIManager
 {
     private readonly GameEngine _engine;
     private readonly InputHandler _engineInputHandler;
-    private Window _mainWindow      = new();
-    private Label _mapLabel         = new();
-    private Label _leftHandLabel    = new();
-    private Label _rightHandLabel   = new();
-    private Label _attributesLabel  = new();
-    private Label _accountLabel     = new();
-    private ListView _itemsListView = new();
+    private Window _mainWindow           = new();
+    private Label _mapLabel              = new();
+    private Label _leftHandLabel         = new();
+    private Label _rightHandLabel        = new();
+    private Label _attributesLabel       = new();
+    private Label _accountLabel          = new();
+    private ListView _itemsListView      = new();
     
-    private View _tileInfoOverlay       = new();
-    private TextView _tileInfoTextView  = new();
-    private TextView _tooltipTextView   = new ();
-    private View _itemTooltipOverlay    = new();
+    private View _tileInfoOverlay        = new();
+    private TextView _tileInfoTextView   = new();
+    private View _itemTooltipOverlay     = new();
+    private TextView _tooltipTextView    = new();
 
-    private View _howToPlayOverlay = new();
+    private View _howToPlayOverlay      = new();
     private TextView _howToPlayTextView = new();
     
     private const int TileInfoWidth     = 15;
@@ -84,6 +85,9 @@ public class TerminalUIManager : IGameUIManager
 
     public void Render()
     {
+        HowToPlayOverlay();
+        TileInfoOverlay();
+        ItemInfoOverlay();
         MapDisplay();
         InventoryDisplay();
         _mainWindow.SetNeedsDraw();
@@ -98,10 +102,7 @@ public class TerminalUIManager : IGameUIManager
     {
         _engineInputHandler.ProcessInput(e.KeyCode, this);
         _engine.CurrentLevelContext.InputHandler.ProcessInput(e.KeyCode, _engine);
-        
-        HowToPlayOverlay();
-        TileInfoOverlay();
-        ItemInfoOverlay();
+
         e.Handled = true;
         Render();
     }
@@ -120,49 +121,92 @@ public class TerminalUIManager : IGameUIManager
         args.Handled = true;
     }
     
-    private void MapDisplay() => _mapLabel.Text = _engine.CurrentMap.ToString();        
+    private void MapDisplay()
+    {
+        StringBuilder sb = new StringBuilder(_engine.CurrentMap.Rows * (_engine.CurrentMap.Cols + Environment.NewLine.Length));
+        var player = _engine.EntityManager.Player;
+
+        for (int i = 0; i < _engine.CurrentMap.Rows; i++)
+        {
+            for (int j = 0; j < _engine.CurrentMap.Cols; j++)
+            {
+                Entity? entity = _engine.EntityManager.GetAnyEntityExceptPlayerAt(i, j);
+
+                if (entity != null)
+                {
+                    sb.Append(entity.Symbol);
+                }
+                else
+                {
+                    sb.Append(_engine.CurrentMap.GetTile(i, j).GetTileSymbol());
+                }
+            }
+
+            sb.AppendLine();
+        }
+        
+        // Player always on top
+        sb[player.Position.Row * (_engine.CurrentMap.Cols + Environment.NewLine.Length) + player.Position.Col] = player.Symbol;
+
+        _mapLabel.Text = sb.ToString();
+    }
+
     private void InventoryDisplay()
     {
-        _leftHandLabel.Text = _engine.Player.Inventory.LeftHand == null
+        var player = _engine.EntityManager.Player;
+        _leftHandLabel.Text = player.Inventory.LeftHand == null
             ? " "
-            : $"{_engine.Player.Inventory.LeftHand.Name}({_engine.Player.Inventory.LeftHand.TileSymbol})";
-        _rightHandLabel.Text = _engine.Player.Inventory.RightHand == null 
+            : $"{player.Inventory.LeftHand.Name}({player.Inventory.LeftHand.TileSymbol})";
+        _rightHandLabel.Text = player.Inventory.RightHand == null 
             ? " " 
-            : $"{_engine.Player.Inventory.RightHand.Name}({_engine.Player.Inventory.RightHand.TileSymbol})";
+            : $"{player.Inventory.RightHand.Name}({player.Inventory.RightHand.TileSymbol})";
 
         var sb = new StringBuilder();
-        foreach (var item in _engine.Player.Inventory.Items)
+        foreach (var item in player.Inventory.Items)
             sb.AppendLine($"{item.Name}({item.TileSymbol})");
         
-        _accountLabel.Text = $"Gold:  {_engine.Player.Inventory.Gold}\n" +
-                             $"Coins: {_engine.Player.Inventory.Coins}";
-        _attributesLabel.Text = $"Health:     {_engine.Player.Health}/{_engine.Player.MaxHealth}\n" +
-                                $"Dexterity:  {_engine.Player.CurrentStats.Dexterity}\n" +
-                                $"Stamina:    {_engine.Player.CurrentStats.Stamina}\n" +
-                                $"Strength:   {_engine.Player.CurrentStats.Strength}\n" +
-                                $"Resistance: {_engine.Player.CurrentStats.Resistance}\n" +
-                                $"Luck:       {_engine.Player.CurrentStats.Luck}\n" +
-                                $"Wisdom:     {_engine.Player.CurrentStats.Wisdom}";
+        _accountLabel.Text = $"Gold:  {player.Inventory.Gold}\n" +
+                             $"Coins: {player.Inventory.Coins}";
+        _attributesLabel.Text =     $"""
+                                    Player
+                                        Health:     {player.Health}/{player.MaxHealth}
+                                        Dexterity:  {player.CurrentStats.Dexterity}
+                                        Stamina:    {player.CurrentStats.Stamina}
+                                        Strength:   {player.CurrentStats.Strength}
+                                        Resistance: {player.CurrentStats.Resistance}
+                                        Luck:       {player.CurrentStats.Luck}
+                                        Wisdom:     {player.CurrentStats.Wisdom}
+                                    
+                                    """;
+        var entity = _engine.EntityManager.GetAnyEntityExceptPlayerAt(_engine.EntityManager.Player.Position.Row, _engine.EntityManager.Player.Position.Col);
+        if (entity != null)
+            _attributesLabel.Text += $"""
+                                      Entity
+                                          Health:    {entity.Health}/{entity.MaxHealth}
+                                          Damage:    {entity.BaseDamage}
+                                          Defense:   {entity.BaseDefense} 
+                                      """;
+
     }
     
     private void TileInfoOverlay()
     {
-        var currentTile = _engine.CurrentMap.GetTile(_engine.Player.Position.Row, _engine.Player.Position.Col);
+        var currentTile = _engine.CurrentMap.GetTile(_engine.EntityManager.Player.Position.Row, _engine.EntityManager.Player.Position.Col);
         if (currentTile.Items.Any() && _itemInfoToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
             foreach (var item in currentTile.Items)
                 _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
 
-            var terminalX = _engine.Player.Position.Col - TileInfoWidth / 2;
-            var terminalY = _engine.Player.Position.Row - TileInfoHeight;
+            var terminalX = _engine.EntityManager.Player.Position.Col - TileInfoWidth / 2;
+            var terminalY = _engine.EntityManager.Player.Position.Row - TileInfoHeight;
 
-            if (terminalY < 0) terminalY = _engine.Player.Position.Row + 1;
+            if (terminalY < 0) terminalY = _engine.EntityManager.Player.Position.Row + 1;
             if (terminalX < 0) terminalX = 0;
 
             if (terminalX + TileInfoWidth > _engine.CurrentMap.Cols)
             {
-                terminalX = _engine.Player.Position.Col - TileInfoWidth - 1;
+                terminalX = _engine.EntityManager.Player.Position.Col - TileInfoWidth - 1;
                 if (terminalX < 0) terminalX = 0;
             }
             
@@ -183,7 +227,11 @@ public class TerminalUIManager : IGameUIManager
         }
     }
     
-    private void ItemInfoOverlay() => _itemTooltipOverlay.Visible = _itemInfoToggle != 0;
+    private void ItemInfoOverlay()
+    {
+        _itemTooltipOverlay.Visible = _itemInfoToggle != 0;
+    }
+
     private void ItemInfoWrite(Item item)
     {
         var selectedItem = item;
@@ -266,7 +314,6 @@ public class TerminalUIManager : IGameUIManager
             Height = Dim.Fill(),
             Text = _engine.CurrentMap.ToString(),
         };
-        // info overlay na temat zawartości kafelka
         _tileInfoOverlay = new View()
         {
             X = 0,
@@ -287,6 +334,7 @@ public class TerminalUIManager : IGameUIManager
             ReadOnly = true,
         };
         _tileInfoOverlay.Add(_tileInfoTextView);
+        
         
         mapFrame.Add(_mapLabel, _tileInfoOverlay);
 
@@ -324,7 +372,7 @@ public class TerminalUIManager : IGameUIManager
         handsFrame.Add(leftHandFrame, rightHandFrame);
 
         // Inventory.Items Frame
-        var attributesFrameWidth = 21;
+        var attributesFrameWidth = 25;
         var itemsFrame = new View()
         {
             X = 0,
@@ -353,10 +401,10 @@ public class TerminalUIManager : IGameUIManager
         _tooltipTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), WordWrap = true, ReadOnly = true };
         _itemTooltipOverlay.Add(_tooltipTextView);
         
-        _itemsListView.SetSource(_engine.Player.Inventory.Items);
+        _itemsListView.SetSource(_engine.EntityManager.Player.Inventory.Items);
         _itemsListView.CollectionChanged += (_, args) =>
         {
-            var items = _engine.Player.Inventory.Items;
+            var items = _engine.EntityManager.Player.Inventory.Items;
             if (items.Count <= 0)
             {
                 _tooltipTextView.Text = string.Empty;
@@ -364,16 +412,16 @@ public class TerminalUIManager : IGameUIManager
                 return;
             }
 
-            if (args.OldStartingIndex == _engine.Player.Inventory.CurrentIndex)
+            if (args.OldStartingIndex == _engine.EntityManager.Player.Inventory.CurrentIndex)
             {
-                ItemInfoWrite(items[_engine.Player.Inventory.CurrentIndex]);
+                ItemInfoWrite(items[_engine.EntityManager.Player.Inventory.CurrentIndex]);
             }
-            if (args.NewStartingIndex == _engine.Player.Inventory.CurrentIndex)
-                ItemInfoWrite(items[_engine.Player.Inventory.CurrentIndex]);
+            if (args.NewStartingIndex == _engine.EntityManager.Player.Inventory.CurrentIndex)
+                ItemInfoWrite(items[_engine.EntityManager.Player.Inventory.CurrentIndex]);
         };
         _itemsListView.SelectedItemChanged += (_, args) =>
         {
-            _engine.Player.Inventory.CurrentIndex = args.Item;
+            _engine.EntityManager.Player.Inventory.CurrentIndex = args.Item;
             ItemInfoWrite((Item)args.Value);
         };
         _itemsListView.RowRender += (_, args) =>
@@ -382,9 +430,9 @@ public class TerminalUIManager : IGameUIManager
                                 new Attribute(Color.Black, Color.White) :
                                 new Attribute(Color.White, Color.Black);
         };
-        _engine.Player.Inventory.Items.CollectionChanged += (_, _) =>
+        _engine.EntityManager.Player.Inventory.Items.CollectionChanged += (_, _) =>
         {
-            if (_engine.Player.Inventory.Items.Count != 1) return;
+            if (_engine.EntityManager.Player.Inventory.Items.Count != 1) return;
             _itemsListView.SelectedItem = 0;
         };
         

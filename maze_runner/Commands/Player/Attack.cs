@@ -11,8 +11,8 @@ public class Attack(IAttackStrategy attackType) : ICommand
     
     public void Execute(IGameContext context)
     {
-        var player = context.Player;
-        var enemy = context.CurrentMap.GetEntity(player);
+        var player = context.EntityManager.Player;
+        var enemy = context.EntityManager.GetAnyEntityExceptPlayerAt(player.Position.Row, player.Position.Col);
         if (enemy == null) return;
         
         var weapon = player.Inventory.RightHand?.GetWeaponFeature();
@@ -24,11 +24,9 @@ public class Attack(IAttackStrategy attackType) : ICommand
             (finalDamage, finalDefense) = attackType.ExecuteNonWeapon(player.CurrentStats);
         
         enemy.TakeDamage(finalDamage, enemy.BaseDefense);
-        if (!enemy.IsAlive)
-        {
-            context.CurrentMap.RemoveEntity(enemy);
-            return;
-        }
-        player.TakeDamage(enemy.BaseDamage, finalDefense);
+        if (enemy.IsAlive)
+            player.TakeDamage(enemy.BaseDamage, finalDefense);
+
+        context.EntityManager.RemoveDeadEntities();
     }
 }

@@ -1,5 +1,6 @@
 using maze_runner.Commands.Core;
 using maze_runner.Commands.Player;
+using maze_runner.Entities;
 using maze_runner.Entities.Combat;
 using maze_runner.Entities.Mobs;
 using maze_runner.Items.Modifiers;
@@ -18,6 +19,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
     private Random _random = new();
     private List<(int, int)> _spawnableCords = new();
     private InputHandler _inputHandler = new();
+    private EntityManager _entityManager = new();
 
     // Add new potential items to spawn
     private readonly IReadOnlyList<Item> _weaponsProt = [new Knife(), new LongSword(), new Sword()];
@@ -72,7 +74,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
 
         var boss = new MainBoss();
         boss.Position = ((_map.Rows - 1) / 2, (_map.Cols - 1) / 2);
-        _map.RegisterEntity(boss);
+        _entityManager.AddEntity(boss);
         
         _inputHandler.RegisterCommand(KeyCode.Z, new Attack(new NormalAttack()), "Perform -normal- attack");
         _inputHandler.RegisterCommand(KeyCode.X, new Attack(new StealthAttack()), "Perform -stealth- attack");
@@ -148,7 +150,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         return this;
     }
 
-    public (Map, InputHandler) Build() => (_map, _inputHandler);
+    public (Map, InputHandler, EntityManager) Build() => (_map, _inputHandler, _entityManager);
 
     public IModifierDungeonBuilder ConnectRooms()
     {

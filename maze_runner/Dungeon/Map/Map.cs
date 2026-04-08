@@ -8,8 +8,6 @@ public class Map(int rows = 0, int cols = 0)
     public readonly int Cols = cols;
     
     private readonly Tile[,] _tiles = new Tile[rows, cols];
-    private List<Entity> _entities = new();
-
 
     private static readonly WallTile OutOfBounds = new WallTile();
     public Tile GetTile(int row, int col)
@@ -27,34 +25,6 @@ public class Map(int rows = 0, int cols = 0)
     }
 
     public (int row, int col) GetSpawningPosition() => (0, 0);
-    
-    public void RegisterEntity(Entity entity) => _entities.Add(entity);
-    public bool RemoveEntity(Entity entity) => _entities.Remove(entity);
-
-    public Entity? GetEntity(Player player)
-        => _entities.FirstOrDefault(entity => entity.Position.Row == player.Position.Row &&
-                                              entity.Position.Col == player.Position.Col &&
-                                              entity != player
-                                              );
-
-
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        for (int i = 0; i < Rows; i++)
-        {
-            for (int j = 0; j < Cols; j++)
-                sb.Append(_tiles[i,j].GetTileSymbol());
-            sb.AppendLine();
-        }
-
-        foreach (var entity in _entities)
-        {
-            sb[entity.Position.Row * (Cols + 1) + entity.Position.Col] = entity.Symbol;
-        }
-        
-        return sb.ToString();
-    }
 }
 
 public struct Room(int x, int y, int width, int height)

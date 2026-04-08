@@ -1,3 +1,5 @@
+using maze_runner.Entities;
+
 namespace maze_runner.Core.Engine;
 using Entities.Player;
 using Dungeon.Map;
@@ -6,18 +8,22 @@ using Commands.Core;
 
 public class GameEngine : IGameContext
 {
-    public Player Player { get; private set; }
+    public EntityManager EntityManager { get; private set; }
     public Map CurrentMap { get; private set; }
     public LevelContext CurrentLevelContext { get; private set; }
     
     private readonly IGameUIManager _uiManager;
+    private Player _player;
 
     public GameEngine(Player player)
     {
-        Player = player;
+        _player = player;
         var ctx = new InitialDungeonStrategy().Generate(40, 20);
         CurrentLevelContext = ctx;
         CurrentMap = ctx.Map;
+        
+        EntityManager = ctx.EntityManager;
+        EntityManager.RegisterPlayer(player);
         
         var inputHandler = new InputHandler();
         _uiManager = new TerminalUIManager(this, inputHandler);
@@ -26,11 +32,12 @@ public class GameEngine : IGameContext
     public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)
     {
         var ctx = strategy.Generate(width, height);
-        Player = new Player();
         CurrentLevelContext = ctx;
         CurrentMap = ctx.Map;
-        CurrentMap.RegisterEntity(Player);
-        Player.Position = (0, 0);
+        EntityManager = ctx.EntityManager;
+        EntityManager.RegisterPlayer(_player);
+        
+        EntityManager.Player.Position = CurrentMap.GetSpawningPosition();
     }
 
     public void Run() => _uiManager.InitializeAndRun();

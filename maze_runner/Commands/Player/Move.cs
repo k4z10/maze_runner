@@ -3,30 +3,21 @@ using maze_runner.Core;
 
 namespace maze_runner.Commands.Player;
 
-public class Move : ICommand
+public class Move(int dx, int dy) : ICommand
 {
-    private readonly int _dx;
-    private readonly int _dy;
-
-    public Move(int dx, int dy)
-    {
-        _dx = dx;
-        _dy = dy;
-    }
-
     public bool CanExecute(IGameContext ctx)
     {
-        int targetX = ctx.Player.Position.Row + _dx;
-        int targetY = ctx.Player.Position.Col + _dy;
+        int targetX = ctx.EntityManager.Player.Position.Row + dx;
+        int targetY = ctx.EntityManager.Player.Position.Col + dy;
         
-        return ctx.CurrentMap.GetTile(targetX, targetY).TryEnter(ctx.Player);
+        return ctx.CurrentMap.GetTile(targetX, targetY).TryEnter();
     }
 
     public void Execute(IGameContext ctx)
     {
-        int newX = ctx.Player.Position.Row + _dx;
-        int newY = ctx.Player.Position.Col + _dy;
+        int newX = ctx.EntityManager.Player.Position.Row + dx;
+        int newY = ctx.EntityManager.Player.Position.Col + dy;
         
-        ctx.Player.Position = (newX, newY);
+        ctx.EntityManager.Player.Position = (newX, newY);
     }
 }

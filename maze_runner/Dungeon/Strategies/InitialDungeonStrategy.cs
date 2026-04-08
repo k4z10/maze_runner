@@ -14,6 +14,6 @@ public class InitialDungeonStrategy : IDungeonGenerationStrategy
         
         string levelDescription = "Initial level.";
         
-        return new LevelContext(ctx.Item1, ctx.Item2, levelDescription);
+        return new LevelContext(ctx.Item1, ctx.Item2, ctx.Item3, levelDescription);
     }
 }
