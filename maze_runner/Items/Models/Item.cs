@@ -12,4 +12,6 @@ public abstract class Item
     public virtual IWeapon? GetWeaponFeature() => null;
 
     public override string ToString() => $"({TileSymbol}) {Name}";
+
+    public abstract Item Clone();
 }

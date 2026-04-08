@@ -1,9 +1,8 @@
-using maze_runner.Player.Components;
+using maze_runner.Entities.Player.Components;
 
 namespace maze_runner.Items.Models;
 public abstract class UselessItem : Item, IEquippable, IStorable
 {
-    public abstract UselessItem Clone();
     public int RequiredHands { get; set; }
     public bool TryEquip(Inventory inventory)
     {

@@ -1,6 +1,7 @@
+using maze_runner.Commands.Core;
 using maze_runner.Core;
-namespace maze_runner.Commands;
-using Core;
+namespace maze_runner.Commands.Player;
+
 public class Unequip : ICommand
 {
     public string Description { get; } = "Unequips item from hand";
@@ -16,14 +17,15 @@ public class Unequip : ICommand
     public void Execute(IGameContext context)
     {
         var inventory = context.Player.Inventory;
-        var rightHand = inventory.RightHand?.GetEquippableFeature();
-        var leftHand = inventory.LeftHand?.GetEquippableFeature();
-        
-        if (rightHand != null)
+
+        if (inventory.RightHand != null)
         {
-            rightHand.TryUnequip(inventory);
+            inventory.TryUnequip(inventory.RightHand);
             return;
         }
-        leftHand?.TryUnequip(inventory);
+        if (inventory.LeftHand != null)
+        {
+            inventory.TryUnequip(inventory.LeftHand);
+        }
     }
 }

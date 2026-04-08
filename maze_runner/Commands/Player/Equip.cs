@@ -1,6 +1,7 @@
+using maze_runner.Commands.Core;
 using maze_runner.Core;
-namespace maze_runner.Commands;
-using Core;
+
+namespace maze_runner.Commands.Player;
 
 public class Equip : ICommand
 {
@@ -17,10 +18,8 @@ public class Equip : ICommand
     {
         var inventory = context.Player.Inventory;
         var index = inventory.CurrentIndex;
-        
         var item = inventory.Items[index];
         
-        var storableFeature = item.GetEquippableFeature();
-        storableFeature?.TryEquip(inventory);
+        inventory.TryEquip(item); 
     }
 }

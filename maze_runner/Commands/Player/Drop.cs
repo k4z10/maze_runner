@@ -1,7 +1,6 @@
 using maze_runner.Core;
 using maze_runner.Items.Models;
-
-namespace maze_runner.Commands;
+namespace maze_runner.Commands.Player;
 using Core;
 
 public class Drop : ICommand

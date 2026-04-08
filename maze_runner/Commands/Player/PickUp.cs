@@ -1,6 +1,7 @@
+using maze_runner.Commands.Core;
 using maze_runner.Core;
-namespace maze_runner.Commands;
-using Core;
+
+namespace maze_runner.Commands.Player;
 
 public class PickUp : ICommand
 {
@@ -16,14 +17,6 @@ public class PickUp : ICommand
         var item = ctx.Map.GetTile(x, y).PopItem();
         if (item == null)
             return;
-
-        // var visitor = new FunctionalItemVisitor(
-        //     onWeapon: w => ctx.Player.Inventory.Items.Add(w),
-        //     onUseless: u => ctx.Player.Inventory.Items.Add(u),
-        //     onCoin: c => ctx.Player.Inventory.Bundle.Coins += c.Amount,
-        //     onGold: g => ctx.Player.Inventory.Bundle.Gold += g.Amount);
-        //
-        // tile.Accept(visitor);
         
         var storableFeature = item.GetStorableFeature();
         if (storableFeature == null) return;

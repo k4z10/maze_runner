@@ -1,6 +1,7 @@
-namespace maze_runner.Commands;
-using Core;
+using maze_runner.Commands.Core;
 using maze_runner.Core;
+
+namespace maze_runner.Commands.Player;
 
 public class Move : ICommand
 {

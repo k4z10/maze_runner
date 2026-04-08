@@ -1,3 +1,8 @@
+using maze_runner.Commands.Core;
+using maze_runner.Commands.Player;
+using maze_runner.Items.Modifiers;
+using Terminal.Gui;
+
 namespace maze_runner.Dungeon.Builders;
 using Items.Models; 
 using Items.Weapons;
@@ -10,10 +15,11 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
     private readonly List<Room> _rooms = new();
     private Random _random = new();
     private List<(int, int)> _spawnableCords = new();
+    private InputHandler _inputHandler = new();
 
     // Add new potential items to spawn
-    private readonly IReadOnlyList<Weapon> _weaponsProt = [new Knife(), new LongSword(), new Sword()];
-    private readonly IReadOnlyList<UselessItem> _uselessItemsProt = [new Bottle(), new Feather(), new Stick()];
+    private readonly IReadOnlyList<Item> _weaponsProt = [new Knife(), new LongSword(), new Sword()];
+    private readonly IReadOnlyList<Item> _uselessItemsProt = [new Bottle(), new Feather(), new Stick()];
 
     public IModifierDungeonBuilder CreateEmptyDungeon(int width, int height)
     {
@@ -27,6 +33,11 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             for (int y = 0; y < height; y++)
                 _spawnableCords.Add((x, y));
         
+        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0));
+        _inputHandler.RegisterCommand(Key.S, new Move(1, 0));
+        _inputHandler.RegisterCommand(Key.A, new Move(0, -1));
+        _inputHandler.RegisterCommand(Key.D, new Move(0, 1));
+        
         return this;
     }
 
@@ -39,6 +50,11 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
                 _map.TrySetTile(i,j, new WallTile());
         
         _spawnableCords.Clear();
+        
+        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0));
+        _inputHandler.RegisterCommand(Key.S, new Move(1, 0));
+        _inputHandler.RegisterCommand(Key.A, new Move(0, -1));
+        _inputHandler.RegisterCommand(Key.D, new Move(0, 1));
         
         return this;
     }
@@ -92,9 +108,14 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
             var prototype = _weaponsProt[_random.Next(_weaponsProt.Count)];
             
-            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(prototype.Clone());
+            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new SharpnessModifier(prototype.Clone()));
         }
 
+        _inputHandler.RegisterCommand(Key.E, new PickUp());
+        _inputHandler.RegisterCommand(Key.Q, new Drop());
+        _inputHandler.RegisterCommand(Key.F, new Equip());
+        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip());
+        
         return this;
     }
 
@@ -108,10 +129,15 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(prototype.Clone());
         }
 
+        _inputHandler.RegisterCommand(Key.E, new PickUp());
+        _inputHandler.RegisterCommand(Key.Q, new Drop());
+        _inputHandler.RegisterCommand(Key.F, new Equip());
+        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip());
+        
         return this;
     }
 
-    public Map Build() => _map;
+    public (Map, InputHandler) Build() => (_map, _inputHandler);
 
     public IModifierDungeonBuilder ConnectRooms()
     {

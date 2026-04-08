@@ -1,11 +1,10 @@
 namespace maze_runner.Items.Weapons;
 using Models;
-public class Knife : Weapon
+
+public class Knife() : LightWeapon(5)
 {
-    public override int Damage => 4;
-    public override int RequiredHands { get; set; } = 1;
     public override string Name { get; } = "Knife";
     public override string Description { get; } = "Light and handy weapon for every use case.";
     public override char TileSymbol { get; } = '⇀';
-    public override Weapon Clone() => new Knife();
+    public override Item Clone() => new Knife();
 }

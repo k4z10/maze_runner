@@ -4,11 +4,10 @@ using maze_runner.Items.Models;
 namespace maze_runner.Core;
 using System.Text;
 using Terminal.Gui;
-using Player;
 using Dungeon.Map;
 public class GameEngine : IGameContext
 {
-    public Player Player { get; }
+    public Entities.Player.Player Player { get; }
     public Map Map { get; private set; }
     private LevelContext _currentLevelContext;
 
@@ -23,9 +22,9 @@ public class GameEngine : IGameContext
     private View _tileInfoOverlay       = new();
     private TextView _tileInfoTextView  = new();
     private TextView _tooltipTextView   = new ();
-    private View _itemTooltipOverlay = new();
+    private View _itemTooltipOverlay    = new();
     private const int TileInfoWidth     = 15;
-    private const int TileInfoHeight     = 5;
+    private const int TileInfoHeight    = 5;
     private int _itemInfoToggle = 0;
 
     private View _howToPlayOverlay = new();
@@ -40,7 +39,7 @@ public class GameEngine : IGameContext
         Player.Position = (0, 0);
     }
 
-    public GameEngine(Player player)
+    public GameEngine(Entities.Player.Player player)
     {
         var ctx = new InitialDungeonStrategy().Generate(40, 20);
         _currentLevelContext = ctx;
@@ -348,12 +347,12 @@ public class GameEngine : IGameContext
         
         _accountLabel.Text = $"Gold:  {Player.Inventory.Gold}\n" +
                              $"Coins: {Player.Inventory.Coins}";
-        _attributesLabel.Text = $"Health:     {Player.Attributes.Health}\n" +
-                                $"Stamina:    {Player.Attributes.Stamina}\n" +
-                                $"Strength:   {Player.Attributes.Strength}\n" +
-                                $"Resistance: {Player.Attributes.Resistance}\n" +
-                                $"Luck:       {Player.Attributes.Luck}\n" +
-                                $"Wisdom:     {Player.Attributes.Wisdom}";
+        _attributesLabel.Text = $"Health:     {Player.Stats.Health}\n" +
+                                $"Stamina:    {Player.Stats.Stamina}\n" +
+                                $"Strength:   {Player.Stats.Strength}\n" +
+                                $"Resistance: {Player.Stats.Resistance}\n" +
+                                $"Luck:       {Player.Stats.Luck}\n" +
+                                $"Wisdom:     {Player.Stats.Wisdom}";
     }
 
     private void TileInfoOverlay()

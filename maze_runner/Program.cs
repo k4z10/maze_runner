@@ -7,7 +7,7 @@ static class Program
 {
     static void Main(string[] args)
     {
-        var player = new Player.Player();
+        var player = new Entities.Player.Player();
         var engine = new GameEngine(player);
         engine.LoadLevel(new EasyDungeonStrategy());
         // engine.LoadLevel(new TestDungeonStrategy());

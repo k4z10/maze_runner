@@ -7,4 +7,5 @@ public class Gold(int amount) : Item, ICurrency, IStorable
     public override char TileSymbol => 'g';
     public override ICurrency GetCurrencyFeature() => this;
     public override IStorable GetStorableFeature() => this;
+    public override Item Clone() => new Gold(Amount);
 }
