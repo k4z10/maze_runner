@@ -1,10 +1,11 @@
 using maze_runner.Entities;
+using maze_runner.Entities.Player;
 
 namespace maze_runner.Core;
 using Dungeon.Map;
 
 public interface IGameContext
 {
-    EntityManager EntityManager { get; }
-    Map CurrentMap { get; }
+    public ILevelContext CurrentLevel { get; }
+    public GameConfig Config { get; }
 }

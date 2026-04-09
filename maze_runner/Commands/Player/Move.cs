@@ -7,17 +7,17 @@ public class Move(int dx, int dy) : ICommand
 {
     public bool CanExecute(IGameContext ctx)
     {
-        int targetX = ctx.EntityManager.Player.Position.Row + dx;
-        int targetY = ctx.EntityManager.Player.Position.Col + dy;
+        int targetX = ctx.CurrentLevel.EntityManager.Player.Position.Row + dx;
+        int targetY = ctx.CurrentLevel.EntityManager.Player.Position.Col + dy;
         
-        return ctx.CurrentMap.GetTile(targetX, targetY).TryEnter();
+        return ctx.CurrentLevel.Map.GetTile(targetX, targetY).TryEnter();
     }
 
     public void Execute(IGameContext ctx)
     {
-        int newX = ctx.EntityManager.Player.Position.Row + dx;
-        int newY = ctx.EntityManager.Player.Position.Col + dy;
+        int newX = ctx.CurrentLevel.EntityManager.Player.Position.Row + dx;
+        int newY = ctx.CurrentLevel.EntityManager.Player.Position.Col + dy;
         
-        ctx.EntityManager.Player.Position = (newX, newY);
+        ctx.CurrentLevel.EntityManager.Player.Position = (newX, newY);
     }
 }

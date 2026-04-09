@@ -8,22 +8,19 @@ using Commands.Core;
 
 public class GameEngine : IGameContext
 {
-    public EntityManager EntityManager { get; private set; }
-    public Map CurrentMap { get; private set; }
-    public LevelContext CurrentLevelContext { get; private set; }
+    public GameConfig Config { get; }
+    public ILevelContext CurrentLevel { get; private set; }
     
     private readonly IGameUIManager _uiManager;
-    private Player _player;
+    private readonly Player _player;
 
-    public GameEngine(Player player)
+    public GameEngine(Player player, GameConfig config)
     {
         _player = player;
+        Config = config;
         var ctx = new InitialDungeonStrategy().Generate(40, 20);
-        CurrentLevelContext = ctx;
-        CurrentMap = ctx.Map;
-        
-        EntityManager = ctx.EntityManager;
-        EntityManager.RegisterPlayer(player);
+        CurrentLevel = ctx;
+        CurrentLevel.EntityManager.RegisterPlayer(player);
         
         var inputHandler = new InputHandler();
         _uiManager = new TerminalUIManager(this, inputHandler);
@@ -32,12 +29,9 @@ public class GameEngine : IGameContext
     public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)
     {
         var ctx = strategy.Generate(width, height);
-        CurrentLevelContext = ctx;
-        CurrentMap = ctx.Map;
-        EntityManager = ctx.EntityManager;
-        EntityManager.RegisterPlayer(_player);
-        
-        EntityManager.Player.Position = CurrentMap.GetSpawningPosition();
+        CurrentLevel = ctx;
+        CurrentLevel.EntityManager.RegisterPlayer(_player);
+        _player.Position = CurrentLevel.Map.GetSpawningPosition();
     }
 
     public void Run() => _uiManager.InitializeAndRun();

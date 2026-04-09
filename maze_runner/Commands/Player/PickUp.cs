@@ -7,14 +7,14 @@ public class PickUp : ICommand
 {
     public bool CanExecute(IGameContext ctx)
     {
-        var (x, y) = ctx.EntityManager.Player.Position;
-        return ctx.CurrentMap.GetTile(x, y).Items.Count > 0;
+        var (x, y) = ctx.CurrentLevel.EntityManager.Player.Position;
+        return ctx.CurrentLevel.Map.GetTile(x, y).Items.Count > 0;
     }
 
     public void Execute(IGameContext ctx)
     {
-        var (x, y) = ctx.EntityManager.Player.Position;
-        var item = ctx.CurrentMap.GetTile(x, y).PopItem();
+        var (x, y) = ctx.CurrentLevel.EntityManager.Player.Position;
+        var item = ctx.CurrentLevel.Map.GetTile(x, y).PopItem();
         if (item == null)
             return;
         
@@ -24,11 +24,11 @@ public class PickUp : ICommand
         var currencyFeature = item.GetCurrencyFeature();
         if (currencyFeature != null)
         {
-            ctx.EntityManager.Player.Inventory.Coins += currencyFeature.Amount;
+            ctx.CurrentLevel.EntityManager.Player.Inventory.Coins += currencyFeature.Amount;
         }
         else
         {
-            ctx.EntityManager.Player.Inventory.Items.Add(item);
+            ctx.CurrentLevel.EntityManager.Player.Inventory.Items.Add(item);
         }
     }
 }

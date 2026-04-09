@@ -1,7 +1,6 @@
-using System.ComponentModel.Design;
 using maze_runner.Core.Engine.Commands;
 using maze_runner.Dungeon.Strategies;
-using maze_runner.Entities;
+using maze_runner.Entities.Player;
 using maze_runner.Items.Models;
 
 namespace maze_runner.Core.Engine;
@@ -101,10 +100,18 @@ public class TerminalUIManager : IGameUIManager
     private void HandleKeyboard(object sender, Key e)
     {
         _engineInputHandler.ProcessInput(e.KeyCode, this);
-        _engine.CurrentLevelContext.InputHandler.ProcessInput(e.KeyCode, _engine);
-
+        _engine.CurrentLevel.InputHandler.ProcessInput(e.KeyCode, _engine);
+        
         e.Handled = true;
         Render();
+
+        var player = _engine.CurrentLevel.EntityManager.Player;
+        if (!player.IsAlive)
+        {
+            ShowGameOverModal();
+            player.Health = player.MaxHealth;
+            Render();
+        }
     }
     
     private void HandleMouse(object sender, MouseEventArgs args)
@@ -123,42 +130,29 @@ public class TerminalUIManager : IGameUIManager
     
     private void MapDisplay()
     {
-        StringBuilder sb = new StringBuilder(_engine.CurrentMap.Rows * (_engine.CurrentMap.Cols + Environment.NewLine.Length));
-        var player = _engine.EntityManager.Player;
+        var sb = new StringBuilder(_engine.CurrentLevel.Map.Rows * (_engine.CurrentLevel.Map.Cols + Environment.NewLine.Length));
+        var player = _engine.CurrentLevel.EntityManager.Player;
 
-        for (int i = 0; i < _engine.CurrentMap.Rows; i++)
+        for (int i = 0; i < _engine.CurrentLevel.Map.Rows; i++)
         {
-            for (int j = 0; j < _engine.CurrentMap.Cols; j++)
+            for (int j = 0; j < _engine.CurrentLevel.Map.Cols; j++)
             {
-                Entity? entity = _engine.EntityManager.GetAnyEntityExceptPlayerAt(i, j);
+                var entity = _engine.CurrentLevel.EntityManager.GetAnyEntityExceptPlayerAt(i, j);
 
-                if (entity != null)
-                {
-                    sb.Append(entity.Symbol);
-                }
-                else
-                {
-                    sb.Append(_engine.CurrentMap.GetTile(i, j).GetTileSymbol());
-                }
+                sb.Append(entity?.Symbol ?? _engine.CurrentLevel.Map.GetTile(i, j).GetTileSymbol());
             }
 
             sb.AppendLine();
         }
-        
         // Player always on top
-        sb[player.Position.Row * (_engine.CurrentMap.Cols + Environment.NewLine.Length) + player.Position.Col] = player.Symbol;
-
-        if (!player.IsAlive)
-        {
-            Quit();
-        }
+        sb[player.Position.Row * (_engine.CurrentLevel.Map.Cols + Environment.NewLine.Length) + player.Position.Col] = player.Symbol;
 
         _mapLabel.Text = sb.ToString();
     }
 
     private void InventoryDisplay()
     {
-        var player = _engine.EntityManager.Player;
+        var player = _engine.CurrentLevel.EntityManager.Player;
         _leftHandLabel.Text = player.Inventory.LeftHand == null
             ? " "
             : $"{player.Inventory.LeftHand.Name}({player.Inventory.LeftHand.TileSymbol})";
@@ -173,7 +167,7 @@ public class TerminalUIManager : IGameUIManager
         _accountLabel.Text = $"Gold:  {player.Inventory.Gold}\n" +
                              $"Coins: {player.Inventory.Coins}";
         _attributesLabel.Text =     $"""
-                                    Player
+                                    {_engine.Config.PlayerName}
                                         Health:     {player.Health}/{player.MaxHealth}
                                         Dexterity:  {player.CurrentStats.Dexterity}
                                         Stamina:    {player.CurrentStats.Stamina}
@@ -183,10 +177,10 @@ public class TerminalUIManager : IGameUIManager
                                         Wisdom:     {player.CurrentStats.Wisdom}
                                     
                                     """;
-        var entity = _engine.EntityManager.GetAnyEntityExceptPlayerAt(_engine.EntityManager.Player.Position.Row, _engine.EntityManager.Player.Position.Col);
+        var entity = _engine.CurrentLevel.EntityManager.GetAnyEntityExceptPlayerAt(_engine.CurrentLevel.EntityManager.Player.Position.Row, _engine.CurrentLevel.EntityManager.Player.Position.Col);
         if (entity != null)
             _attributesLabel.Text += $"""
-                                      Entity
+                                      Enemy
                                           Health:    {entity.Health}/{entity.MaxHealth}
                                           Damage:    {entity.BaseDamage}
                                           Defense:   {entity.BaseDefense} 
@@ -196,22 +190,22 @@ public class TerminalUIManager : IGameUIManager
     
     private void TileInfoOverlay()
     {
-        var currentTile = _engine.CurrentMap.GetTile(_engine.EntityManager.Player.Position.Row, _engine.EntityManager.Player.Position.Col);
+        var currentTile = _engine.CurrentLevel.Map.GetTile(_engine.CurrentLevel.EntityManager.Player.Position.Row, _engine.CurrentLevel.EntityManager.Player.Position.Col);
         if (currentTile.Items.Any() && _itemInfoToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
             foreach (var item in currentTile.Items)
                 _tileInfoTextView.Text += $"{item.Name}({item.TileSymbol})\n";
 
-            var terminalX = _engine.EntityManager.Player.Position.Col - TileInfoWidth / 2;
-            var terminalY = _engine.EntityManager.Player.Position.Row - TileInfoHeight;
+            var terminalX = _engine.CurrentLevel.EntityManager.Player.Position.Col - TileInfoWidth / 2;
+            var terminalY = _engine.CurrentLevel.EntityManager.Player.Position.Row - TileInfoHeight;
 
-            if (terminalY < 0) terminalY = _engine.EntityManager.Player.Position.Row + 1;
+            if (terminalY < 0) terminalY = _engine.CurrentLevel.EntityManager.Player.Position.Row + 1;
             if (terminalX < 0) terminalX = 0;
 
-            if (terminalX + TileInfoWidth > _engine.CurrentMap.Cols)
+            if (terminalX + TileInfoWidth > _engine.CurrentLevel.Map.Cols)
             {
-                terminalX = _engine.EntityManager.Player.Position.Col - TileInfoWidth - 1;
+                terminalX = _engine.CurrentLevel.EntityManager.Player.Position.Col - TileInfoWidth - 1;
                 if (terminalX < 0) terminalX = 0;
             }
             
@@ -232,11 +226,8 @@ public class TerminalUIManager : IGameUIManager
         }
     }
     
-    private void ItemInfoOverlay()
-    {
-        _itemTooltipOverlay.Visible = _itemInfoToggle != 0;
-    }
-
+    private void ItemInfoOverlay() => _itemTooltipOverlay.Visible = _itemInfoToggle != 0;
+    
     private void ItemInfoWrite(Item item)
     {
         var selectedItem = item;
@@ -263,12 +254,12 @@ public class TerminalUIManager : IGameUIManager
         {
             var sb = new StringBuilder();
             
-            sb.AppendLine("Level name: " + _engine.CurrentLevelContext.LevelName);
-            sb.AppendLine(_engine.CurrentLevelContext.Description);
+            sb.AppendLine("Level name: " + _engine.CurrentLevel.LevelName);
+            sb.AppendLine(_engine.CurrentLevel.Description);
             sb.AppendLine();
             sb.AppendLine("1. General\n" + _engineInputHandler.ToString());
             sb.AppendLine();
-            sb.AppendLine("2. Ingame actions\n" + _engine.CurrentLevelContext.InputHandler.ToString());
+            sb.AppendLine("2. Ingame actions\n" + _engine.CurrentLevel.InputHandler.ToString());
             
             _howToPlayTextView.Text = sb.ToString();
             _howToPlayOverlay.Visible = true;
@@ -276,6 +267,78 @@ public class TerminalUIManager : IGameUIManager
         else
         {
             _howToPlayOverlay.Visible = false;
+        }
+    }
+
+    private void ShowGameOverModal()
+    {
+        if (_engine.CurrentLevel.EntityManager.Player.IsAlive)
+            return;
+        
+        var gameOverDialog = new Dialog()
+        {
+            Title = " Game Over ",
+            Width = 40,
+            Height = 10,
+            X = Pos.Center(),
+            Y = Pos.Center(),
+        };
+
+        var deathLabel = new Label()
+        {
+            Text = "Sadly you didn't make it :(",
+            X = Pos.Center(),
+            Y = 2
+        };
+
+        var btnRestart = new Button()
+        {
+            Text = "New Game"
+        };
+
+        var btnQuit = new Button()
+        {
+            Text = "Exit"
+        };
+
+        var buttonContainer = new View()
+        {
+            X = Pos.Center(),
+            Y = Pos.Bottom(deathLabel) + 2,
+            Width = Dim.Fill(),
+            Height = 1
+        };
+
+        btnRestart.X = Pos.Center() - 8;
+        btnQuit.X = Pos.Right(btnRestart) + 2;
+
+        buttonContainer.Add(btnRestart, btnQuit);
+
+        var shouldQuit = false;
+        btnQuit.Accepting += (sender, args) =>
+        {
+            shouldQuit = true;
+            Application.RequestStop();
+        };
+
+        btnRestart.Accepting += (sender, args) =>
+        {
+            shouldQuit = false;
+            Application.RequestStop(); 
+        };
+
+        gameOverDialog.Add(deathLabel, buttonContainer);
+
+        Application.Run(gameOverDialog);
+        
+        gameOverDialog.Dispose();
+        if (shouldQuit)
+        {
+            Quit();
+        }
+        else
+        {
+            Reload();
         }
     }
 
@@ -306,8 +369,8 @@ public class TerminalUIManager : IGameUIManager
         {
             X = 0,
             Y = 0,
-            Width = _engine.CurrentMap.Cols + 2,
-            Height = _engine.CurrentMap.Rows + 2,
+            Width = _engine.CurrentLevel.Map.Cols + 2,
+            Height = _engine.CurrentLevel.Map.Rows + 2,
             Title = " Map ",
             BorderStyle = LineStyle.Single
         };
@@ -317,7 +380,6 @@ public class TerminalUIManager : IGameUIManager
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            Text = _engine.CurrentMap.ToString(),
         };
         _tileInfoOverlay = new View()
         {
@@ -406,10 +468,10 @@ public class TerminalUIManager : IGameUIManager
         _tooltipTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), WordWrap = true, ReadOnly = true };
         _itemTooltipOverlay.Add(_tooltipTextView);
         
-        _itemsListView.SetSource(_engine.EntityManager.Player.Inventory.Items);
+        _itemsListView.SetSource(_engine.CurrentLevel.EntityManager.Player.Inventory.Items);
         _itemsListView.CollectionChanged += (_, args) =>
         {
-            var items = _engine.EntityManager.Player.Inventory.Items;
+            var items = _engine.CurrentLevel.EntityManager.Player.Inventory.Items;
             if (items.Count <= 0)
             {
                 _tooltipTextView.Text = string.Empty;
@@ -417,16 +479,16 @@ public class TerminalUIManager : IGameUIManager
                 return;
             }
 
-            if (args.OldStartingIndex == _engine.EntityManager.Player.Inventory.CurrentIndex)
+            if (args.OldStartingIndex == _engine.CurrentLevel.EntityManager.Player.Inventory.CurrentIndex)
             {
-                ItemInfoWrite(items[_engine.EntityManager.Player.Inventory.CurrentIndex]);
+                ItemInfoWrite(items[_engine.CurrentLevel.EntityManager.Player.Inventory.CurrentIndex]);
             }
-            if (args.NewStartingIndex == _engine.EntityManager.Player.Inventory.CurrentIndex)
-                ItemInfoWrite(items[_engine.EntityManager.Player.Inventory.CurrentIndex]);
+            if (args.NewStartingIndex == _engine.CurrentLevel.EntityManager.Player.Inventory.CurrentIndex)
+                ItemInfoWrite(items[_engine.CurrentLevel.EntityManager.Player.Inventory.CurrentIndex]);
         };
         _itemsListView.SelectedItemChanged += (_, args) =>
         {
-            _engine.EntityManager.Player.Inventory.CurrentIndex = args.Item;
+            _engine.CurrentLevel.EntityManager.Player.Inventory.CurrentIndex = args.Item;
             ItemInfoWrite((Item)args.Value);
         };
         _itemsListView.RowRender += (_, args) =>
@@ -435,9 +497,9 @@ public class TerminalUIManager : IGameUIManager
                                 new Attribute(Color.Black, Color.White) :
                                 new Attribute(Color.White, Color.Black);
         };
-        _engine.EntityManager.Player.Inventory.Items.CollectionChanged += (_, _) =>
+        _engine.CurrentLevel.EntityManager.Player.Inventory.Items.CollectionChanged += (_, _) =>
         {
-            if (_engine.EntityManager.Player.Inventory.Items.Count != 1) return;
+            if (_engine.CurrentLevel.EntityManager.Player.Inventory.Items.Count != 1) return;
             _itemsListView.SelectedItem = 0;
         };
         

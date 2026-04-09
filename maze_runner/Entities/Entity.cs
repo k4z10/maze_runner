@@ -3,7 +3,7 @@ namespace maze_runner.Entities;
 public abstract class Entity(int maxHealth)
 {
     public (int Row, int Col) Position { get; set; }
-    public int Health { get; protected set; } = maxHealth;
+    public int Health { get; set; } = maxHealth;
     public virtual int MaxHealth { get; protected set; } = maxHealth;
     public Attributes BaseStats { get; protected set; }
     public virtual Attributes CurrentStats => BaseStats;
