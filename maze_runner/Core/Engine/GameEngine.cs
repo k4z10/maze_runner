@@ -1,4 +1,6 @@
+using maze_runner.Core.Logger;
 using maze_runner.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace maze_runner.Core.Engine;
 using Entities.Player;
@@ -9,15 +11,20 @@ using Commands.Core;
 public class GameEngine : IGameContext
 {
     public GameConfig Config { get; }
+    public EventBus EventBus { get; }
+    public IMessageLog Logger { get; }
     public ILevelContext CurrentLevel { get; private set; }
     
     private readonly IGameUIManager _uiManager;
     private readonly Player _player;
 
-    public GameEngine(Player player, GameConfig config)
+    public GameEngine(Player player, GameConfig config, EventBus eventBus, IMessageLog logger)
     {
-        _player = player;
         Config = config;
+        EventBus = eventBus;
+        Logger = logger;
+        
+        _player = player;
         var ctx = new InitialDungeonStrategy().Generate(40, 20);
         CurrentLevel = ctx;
         CurrentLevel.EntityManager.RegisterPlayer(player);

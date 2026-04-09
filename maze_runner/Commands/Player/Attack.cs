@@ -1,7 +1,6 @@
 using maze_runner.Commands.Core;
 using maze_runner.Core;
 using maze_runner.Entities.Combat;
-using maze_runner.Items;
 
 namespace maze_runner.Commands.Player;
 

@@ -1,11 +1,11 @@
-using maze_runner.Entities;
-using maze_runner.Entities.Player;
+using maze_runner.Core.Logger;
 
 namespace maze_runner.Core;
-using Dungeon.Map;
 
 public interface IGameContext
 {
     public ILevelContext CurrentLevel { get; }
     public GameConfig Config { get; }
+    public EventBus EventBus { get; }
+    public IMessageLog Logger { get; }
 }

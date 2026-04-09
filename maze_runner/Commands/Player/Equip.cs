@@ -1,5 +1,6 @@
 using maze_runner.Commands.Core;
 using maze_runner.Core;
+using maze_runner.Core.Logger;
 
 namespace maze_runner.Commands.Player;
 
@@ -17,7 +18,10 @@ public class Equip : ICommand
         var inventory = context.CurrentLevel.EntityManager.Player.Inventory;
         var index = inventory.CurrentIndex;
         var item = inventory.Items[index];
-        
-        inventory.TryEquip(item); 
+
+        if (inventory.TryEquip(item))
+        {
+            context.EventBus.ItemEquipped.Publish(new ItemEquippedEvent(item.Name));
+        }
     }
 }
