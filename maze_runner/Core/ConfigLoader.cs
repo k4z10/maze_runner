@@ -1,10 +1,8 @@
 using System.Text.Json;
-using System.IO;
-using Terminal.Gui;
 
 namespace maze_runner.Core;
 
-public class ConfigLoader
+public static class ConfigLoader
 {
     private static readonly JsonSerializerOptions JsonOptions = new ()
     {

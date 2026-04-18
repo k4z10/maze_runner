@@ -4,16 +4,8 @@ using Builders;
 
 public class TestDungeonStrategy : IDungeonGenerationStrategy
 {
-    public ILevelContext Generate(int width, int height)
+    public IModifierDungeonBuilder GenerateTopology(IBaseDungeonBuilder baseBuilder, int width, int height)
     {
-        var builder = new ProcDungeonBuilder();
-        var ctx = builder.CreateEmptyDungeon(width, height)
-            .AddWeapons(10)
-            .AddUselessItems(10)
-            .Build();
-        
-        ctx.Description = "This is test level.";
-        
-        return ctx;
+        return baseBuilder.CreateEmptyDungeon(width, height);
     }
 }

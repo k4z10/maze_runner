@@ -1,4 +1,5 @@
 using maze_runner.Core;
+using maze_runner.Items.Models;
 
 namespace maze_runner.Dungeon.Builders;
 using Map;
@@ -8,8 +9,11 @@ public interface IModifierDungeonBuilder
     IModifierDungeonBuilder AddStartingRoom();
     
     IModifierDungeonBuilder AddCentralRoom(int width, int height, bool secure);
-    IModifierDungeonBuilder AddUselessItems(int count);
-    IModifierDungeonBuilder AddWeapons(int count);
     IModifierDungeonBuilder ConnectRooms();
-    ILevelContext Build();
+    
+    IModifierDungeonBuilder PopulateItems(IItemPool pool, int count);
+    IModifierDungeonBuilder PopulateEnemies(IEnemyPool pool, int count);
+    IModifierDungeonBuilder PlaceArtifact(Item artifact);
+    
+    ILevelContext GetLevelContext();
 }

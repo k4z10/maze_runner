@@ -1,11 +1,10 @@
 using maze_runner.Core.Logger;
+using maze_runner.Dungeon;
 using maze_runner.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace maze_runner.Core.Engine;
 using Entities.Player;
 using Dungeon.Map;
-using Dungeon.Strategies;
 using Commands.Core;
 
 public class GameEngine : IGameContext
@@ -18,6 +17,7 @@ public class GameEngine : IGameContext
     
     private readonly IGameUIManager _uiManager;
     private readonly Player _player;
+    private readonly DungeonDirector _director = new();
 
     public GameEngine(Player player, GameConfig config)
     {
@@ -27,17 +27,14 @@ public class GameEngine : IGameContext
         
         _player = player;
         _player.Name = config.PlayerName;
-        var ctx = new InitialDungeonStrategy().Generate(40, 20);
-        CurrentLevel = ctx;
+        CurrentLevel = new LevelContext(new Map(), new InputHandler(), new EntityManager());
         CurrentLevel.EntityManager.RegisterPlayer(player);
-        
         _uiManager = new TerminalUIManager(this);
     }
     
-    public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)
+    public void LoadLevel(IDungeonThemeFactory theme, int width = 40, int height = 20)
     {
-        var ctx = strategy.Generate(width, height);
-        CurrentLevel = ctx;
+        CurrentLevel = _director.ConstructLevel(theme, width, height);
         CurrentLevel.EntityManager.RegisterPlayer(_player);
         _player.Position = CurrentLevel.Map.GetSpawningPosition();
     }

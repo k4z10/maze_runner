@@ -1,6 +1,7 @@
 using maze_runner.Commands.TerminalUI;
 using maze_runner.Core.Logger;
 using maze_runner.Dungeon.Strategies;
+using maze_runner.Dungeon.Themes.Library;
 using maze_runner.Items.Models;
 
 namespace maze_runner.Core.Engine;
@@ -103,7 +104,7 @@ public class TerminalUIManager : IGameUIManager
     public void ToggleHelp() => _howToPlayOverlayToggle ^= 1;
     public void ToggleJournal() => _journalOverlayToggle ^= 1;
     public void Quit() => Application.RequestStop();
-    public void Reload() => Engine.LoadLevel(new EasyDungeonStrategy());
+    public void Reload() => Engine.LoadLevel(new LibraryTheme());
 
     private void HandleKeyboard(object sender, Key e)
     {

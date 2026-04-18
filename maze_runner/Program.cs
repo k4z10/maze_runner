@@ -1,6 +1,7 @@
 ﻿using maze_runner.Core;
 using maze_runner.Core.Logger;
 using maze_runner.Dungeon.Strategies;
+using maze_runner.Dungeon.Themes.Library;
 using maze_runner.Entities.Player;
 
 namespace maze_runner;
@@ -16,7 +17,7 @@ static class Program
         GameEvents.LogBridge(new FileLog(config));
         
         var engine = new GameEngine(player, config);
-        engine.LoadLevel(new EasyDungeonStrategy());
+        engine.LoadLevel(new LibraryTheme());
         // engine.LoadLevel(new TestDungeonStrategy());
         engine.Run();
     }

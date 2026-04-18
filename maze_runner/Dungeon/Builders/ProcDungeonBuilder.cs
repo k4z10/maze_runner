@@ -71,14 +71,12 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         CraveRoom(central);
         _rooms.Add(central);
 
-        var boss = new MainBoss();
-        boss.Position = ((_ctx.Map.Rows - 1) / 2, (_ctx.Map.Cols - 1) / 2);
+        var boss = new MainBoss
+        {
+            Position = ((_ctx.Map.Rows - 1) / 2, (_ctx.Map.Cols - 1) / 2)
+        };
         if (secure) _ctx.EntityManager.AddEntity(boss);
-        
-        _ctx.InputHandler.RegisterCommand(KeyCode.Z, new Attack(_ctx, new NormalAttack()), "Perform -normal- attack");
-        _ctx.InputHandler.RegisterCommand(KeyCode.X, new Attack(_ctx, new StealthAttack()), "Perform -stealth- attack");
-        _ctx.InputHandler.RegisterCommand(KeyCode.C, new Attack(_ctx, new MagicAttack()), "Perform -magic- attack");
-        
+
         return this;
     }
 
@@ -113,14 +111,13 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         return this;
     }
 
-    public IModifierDungeonBuilder AddWeapons(int count)
+
+    public IModifierDungeonBuilder PopulateItems(IItemPool pool, int count)
     {
         for (int i = 0; i < count; ++i)
         {
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
-            var prototype = _weaponsProt[_random.Next(_weaponsProt.Count)];
-            
-            _ctx.Map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(new SharpnessModifier(prototype.Clone())));
+            _ctx.Map.GetTile(randomCords.Item1, randomCords.Item2).AddItem(pool.GetItem());
         }
 
         _ctx.InputHandler.RegisterCommand(Key.E, new PickUp(_ctx), "Pick item from the ground");
@@ -131,28 +128,33 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         return this;
     }
 
-    public IModifierDungeonBuilder AddUselessItems(int count)
+    public IModifierDungeonBuilder PopulateEnemies(IEnemyPool pool, int count)
     {
         for (int i = 0; i < count; ++i)
         {
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
-            var prototype = _uselessItemsProt[_random.Next(_uselessItemsProt.Count)];
-            
-            _ctx.Map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(prototype.Clone()));
-        }
-        var rC = _spawnableCords[_random.Next(_spawnableCords.Count)];
-        _ctx.Map.GetTile(rC.Item2, rC.Item1).AddItem(new KnowledgeModifier(new Feather()));
-        
 
-        _ctx.InputHandler.RegisterCommand(Key.E, new PickUp(_ctx), "Pick item from the ground");
-        _ctx.InputHandler.RegisterCommand(Key.Q, new Drop(_ctx), "Drop selected item from inventory");
-        _ctx.InputHandler.RegisterCommand(Key.F, new Equip(_ctx), "Equip selected item");
-        _ctx.InputHandler.RegisterCommand(Key.F.WithShift, new Unequip(_ctx), "Unequip item (from Hands)");
+            var enemy = pool.GetEntity();
+            enemy.Position = randomCords;
+            _ctx.EntityManager.AddEntity(enemy);
+        }
+        
+        _ctx.InputHandler.RegisterCommand(KeyCode.Z, new Attack(_ctx, new NormalAttack()), "Perform -normal- attack");
+        _ctx.InputHandler.RegisterCommand(KeyCode.X, new Attack(_ctx, new StealthAttack()), "Perform -stealth- attack");
+        _ctx.InputHandler.RegisterCommand(KeyCode.C, new Attack(_ctx, new MagicAttack()), "Perform -magic- attack");
         
         return this;
     }
 
-    public ILevelContext Build() => _ctx; 
+    public IModifierDungeonBuilder PlaceArtifact(Item artifact)
+    {
+        var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
+        _ctx.Map.GetTile(randomCords.Item1, randomCords.Item2).AddItem(artifact);
+
+        return this;
+    }
+
+    public ILevelContext GetLevelContext() => _ctx; 
 
     public IModifierDungeonBuilder ConnectRooms()
     {
@@ -184,7 +186,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         for (int x = start; x <= end; ++x)
         {
             _ctx.Map.TrySetTile(y, x, new FloorTile());
-            _spawnableCords.Add((x, y));
+            _spawnableCords.Add((y, x));
         }
     }
 
@@ -195,7 +197,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         for (int y = start; y <= end; ++y)
         {
             _ctx.Map.TrySetTile(y, x, new FloorTile());
-            _spawnableCords.Add((x, y));
+            _spawnableCords.Add((y, x));
         }
     }
 
@@ -206,7 +208,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             {
                 if (!_ctx.Map.TrySetTile(i, j, new FloorTile()))
                     continue;
-                _spawnableCords.Add((j, i));
+                _spawnableCords.Add((i, j));
             }
     }
 }

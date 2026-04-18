@@ -4,7 +4,7 @@ using Builders;
 using Map;
 public interface IDungeonGenerationStrategy
 {
-    ILevelContext Generate(int width, int height);
+    IModifierDungeonBuilder GenerateTopology(IBaseDungeonBuilder baseBuilder,int width, int height);
 }
 
 
