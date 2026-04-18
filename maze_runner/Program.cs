@@ -13,14 +13,9 @@ static class Program
         var config = ConfigLoader.Load("config.json");
         var player = new Player();
         
-        var eventBus = new EventBus();
-        var memoryLog = new MemoryLog();
-        var fileLog = new FileLog(config);
-        var compositeLog = new CompositeLogger(memoryLog, fileLog);
+        GameEvents.LogBridge(new FileLog(config));
         
-        _ = new EventLogBridge(eventBus, fileLog);
-        
-        var engine = new GameEngine(player, config, eventBus, compositeLog);
+        var engine = new GameEngine(player, config);
         engine.LoadLevel(new EasyDungeonStrategy());
         // engine.LoadLevel(new TestDungeonStrategy());
         engine.Run();

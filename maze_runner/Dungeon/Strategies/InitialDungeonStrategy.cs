@@ -7,13 +7,13 @@ using Commands;
 
 public class InitialDungeonStrategy : IDungeonGenerationStrategy
 {
-    public LevelContext Generate(int width, int height)
+    public ILevelContext Generate(int width, int height)
     {
         var builder = new ProcDungeonBuilder();
         var ctx = builder.CreateEmptyDungeon(width, height).Build();
         
-        string levelDescription = "Initial level.";
+        ctx.Description = "Initial level.";        
         
-        return new LevelContext(ctx.Item1, ctx.Item2, ctx.Item3, levelDescription);
+        return ctx;
     }
 }

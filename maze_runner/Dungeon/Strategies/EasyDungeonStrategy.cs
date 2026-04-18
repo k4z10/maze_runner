@@ -7,7 +7,7 @@ using Commands;
 
 public class EasyDungeonStrategy : IDungeonGenerationStrategy
 {
-    public LevelContext Generate(int width, int height)
+    public ILevelContext Generate(int width, int height)
     {
         var builder = new ProcDungeonBuilder();
         var ctx = builder.CreateFullDungeon(width, height)
@@ -19,8 +19,9 @@ public class EasyDungeonStrategy : IDungeonGenerationStrategy
             .AddUselessItems(10)
             .Build();
 
-        string levelDescription = "This is easy level.";
-        
-        return new LevelContext(ctx.Item1, ctx.Item2, ctx.Item3, levelDescription, "Easy");
+        ctx.Description = "This is easy level.";
+        ctx.LevelName = "Easy";
+
+        return ctx;
     }
 }

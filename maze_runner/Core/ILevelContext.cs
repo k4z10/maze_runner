@@ -8,6 +8,6 @@ public interface ILevelContext
     public Map Map { get; set; }
     public InputHandler InputHandler { get; set; }
     public EntityManager EntityManager { get; set; }
-    public string Description { get; }
-    public string LevelName { get; }
+    public string Description { get; set; }
+    public string LevelName { get; set; }
 }

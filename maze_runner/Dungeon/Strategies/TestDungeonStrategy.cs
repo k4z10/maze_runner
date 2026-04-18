@@ -4,7 +4,7 @@ using Builders;
 
 public class TestDungeonStrategy : IDungeonGenerationStrategy
 {
-    public LevelContext Generate(int width, int height)
+    public ILevelContext Generate(int width, int height)
     {
         var builder = new ProcDungeonBuilder();
         var ctx = builder.CreateEmptyDungeon(width, height)
@@ -12,8 +12,8 @@ public class TestDungeonStrategy : IDungeonGenerationStrategy
             .AddUselessItems(10)
             .Build();
         
-        string levelDescription = "This is test level.";
+        ctx.Description = "This is test level.";
         
-        return new LevelContext(ctx.Item1, ctx.Item2, ctx.Item3, levelDescription);
+        return ctx;
     }
 }

@@ -1,20 +1,16 @@
 using maze_runner.Commands.Core;
 using maze_runner.Core;
+using maze_runner.Core.Logger;
 
 namespace maze_runner.Commands.Player;
 
-public class PickUp : ICommand
+public class PickUp(ILevelContext ctx) : ICommand
 {
-    public bool CanExecute(IGameContext ctx)
+    public void Execute()
     {
-        var (x, y) = ctx.CurrentLevel.EntityManager.Player.Position;
-        return ctx.CurrentLevel.Map.GetTile(x, y).Items.Count > 0;
-    }
-
-    public void Execute(IGameContext ctx)
-    {
-        var (x, y) = ctx.CurrentLevel.EntityManager.Player.Position;
-        var item = ctx.CurrentLevel.Map.GetTile(x, y).PopItem();
+        var (x, y) = ctx.EntityManager.Player.Position;
+        if (ctx.Map.GetTile(x, y).Items.Count <= 0) return;
+        var item = ctx.Map.GetTile(x, y).PopItem();
         if (item == null)
             return;
         
@@ -24,11 +20,12 @@ public class PickUp : ICommand
         var currencyFeature = item.GetCurrencyFeature();
         if (currencyFeature != null)
         {
-            ctx.CurrentLevel.EntityManager.Player.Inventory.Coins += currencyFeature.Amount;
+            ctx.EntityManager.Player.Inventory.Coins += currencyFeature.Amount;
         }
         else
         {
-            ctx.CurrentLevel.EntityManager.Player.Inventory.Items.Add(item);
+            ctx.EntityManager.Player.Inventory.Items.Add(item);
         }
+        GameEvents.ItemPickedUp.Publish(new ItemPickedUpEvent(item.Name));
     }
 }

@@ -3,19 +3,13 @@ using maze_runner.Items.Models;
 namespace maze_runner.Commands.Player;
 using Core;
 
-public class Drop : ICommand
+public class Drop(ILevelContext ctx) : ICommand
 {
-    public bool CanExecute(IGameContext context)
+    public void Execute()
     {
-        var inventory = context.CurrentLevel.EntityManager.Player.Inventory;
-        if (inventory.Items.Count <= 0 && inventory.Coins <= 0 && inventory.Gold <= 0) return false;
-        return true;
-    }
-
-    public void Execute(IGameContext context)
-    {
-        var inventory = context.CurrentLevel.EntityManager.Player.Inventory;
-        var currentTile = context.CurrentLevel.Map.GetTile(context.CurrentLevel.EntityManager.Player.Position.Row, context.CurrentLevel.EntityManager.Player.Position.Col);
+        var inventory = ctx.EntityManager.Player.Inventory;
+        if (inventory.Items.Count <= 0 && inventory.Coins <= 0 && inventory.Gold <= 0) return;
+        var currentTile = ctx.Map.GetTile(ctx.EntityManager.Player.Position.Row, ctx.EntityManager.Player.Position.Col);
         
         switch (inventory.CurrentIndex)
         {
@@ -37,7 +31,7 @@ public class Drop : ICommand
             }
             default:
             {
-                var item = inventory.Items[context.CurrentLevel.EntityManager.Player.Inventory.CurrentIndex];
+                var item = inventory.Items[ctx.EntityManager.Player.Inventory.CurrentIndex];
                 inventory.Items.Remove(item);
                 currentTile.AddItem(item);
                 return;

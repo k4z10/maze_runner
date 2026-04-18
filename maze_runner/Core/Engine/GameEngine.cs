@@ -11,26 +11,27 @@ using Commands.Core;
 public class GameEngine : IGameContext
 {
     public GameConfig Config { get; }
-    public EventBus EventBus { get; }
-    public IMessageLog Logger { get; }
     public ILevelContext CurrentLevel { get; private set; }
+    public MemoryLog Logs { get; private set; }
+
+    public InputHandler GlobalInput { get; } = new();
     
     private readonly IGameUIManager _uiManager;
     private readonly Player _player;
 
-    public GameEngine(Player player, GameConfig config, EventBus eventBus, IMessageLog logger)
+    public GameEngine(Player player, GameConfig config)
     {
         Config = config;
-        EventBus = eventBus;
-        Logger = logger;
+        Logs = new MemoryLog();
+        GameEvents.LogBridge(Logs);
         
         _player = player;
+        _player.Name = config.PlayerName;
         var ctx = new InitialDungeonStrategy().Generate(40, 20);
         CurrentLevel = ctx;
         CurrentLevel.EntityManager.RegisterPlayer(player);
         
-        var inputHandler = new InputHandler();
-        _uiManager = new TerminalUIManager(this, inputHandler);
+        _uiManager = new TerminalUIManager(this);
     }
     
     public void LoadLevel(IDungeonGenerationStrategy strategy, int width = 40, int height = 20)

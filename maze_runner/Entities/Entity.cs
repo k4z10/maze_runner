@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 namespace maze_runner.Entities;
 
 public abstract class Entity(int maxHealth)
@@ -11,6 +13,7 @@ public abstract class Entity(int maxHealth)
     public virtual int BaseDefense { get; protected set; }
     public bool IsAlive => Health > 0;
     public abstract char Symbol { get; }
+    public virtual string Name { get; set; } = "Entity";
 
     public void TakeDamage(int damage, int defense)
     {

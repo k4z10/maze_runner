@@ -9,6 +9,6 @@ public class LevelContext(Map map, InputHandler inputHandler, EntityManager enti
     public Map Map { get; set; } = map;
     public InputHandler InputHandler { get; set; } = inputHandler;
     public EntityManager EntityManager { get; set; } = entityManager;
-    public string Description { get; } =  description;
-    public string LevelName { get; } = name;
+    public string Description { get; set; } =  description;
+    public string LevelName { get; set; } = name;
 }

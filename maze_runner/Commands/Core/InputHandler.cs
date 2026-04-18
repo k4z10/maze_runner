@@ -1,4 +1,5 @@
 using System.Text;
+using maze_runner.Core.Logger;
 
 namespace maze_runner.Commands.Core;
 using maze_runner.Core;
@@ -11,11 +12,15 @@ public class InputHandler
     public void RegisterCommand(Key key, ICommand command, string description = "") 
         => _keyBindings[key] = (command, description);
 
-    public void ProcessInput(Key key, IGameContext ctx)
+    public bool ProcessInput(Key key)
     {
         if (_keyBindings.TryGetValue(key, out var b))
-            if (b.command.CanExecute(ctx))
-                b.command.Execute(ctx);
+        {
+            b.command.Execute();
+            return true;
+        }
+        
+        return false;
     }
 
     public override string ToString()

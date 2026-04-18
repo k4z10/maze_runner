@@ -2,19 +2,11 @@ using maze_runner.Commands.Core;
 using maze_runner.Core;
 namespace maze_runner.Commands.Player;
 
-public class Unequip : ICommand
+public class Unequip(ILevelContext ctx) : ICommand
 {
-    public bool CanExecute(IGameContext context)
+    public void Execute()
     {
-        var rightHand = context.CurrentLevel.EntityManager.Player.Inventory.RightHand;
-        var leftHand = context.CurrentLevel.EntityManager.Player.Inventory.LeftHand;
-        
-        return rightHand != null || leftHand != null;
-    }
-
-    public void Execute(IGameContext context)
-    {
-        var inventory = context.CurrentLevel.EntityManager.Player.Inventory;
+        var inventory = ctx.EntityManager.Player.Inventory;
 
         if (inventory.LeftHand != null)
         {

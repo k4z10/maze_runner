@@ -1,5 +1,4 @@
-using maze_runner.Commands.Core;
-using maze_runner.Entities;
+using maze_runner.Core;
 
 namespace maze_runner.Dungeon.Builders;
 using Map;
@@ -12,5 +11,5 @@ public interface IModifierDungeonBuilder
     IModifierDungeonBuilder AddUselessItems(int count);
     IModifierDungeonBuilder AddWeapons(int count);
     IModifierDungeonBuilder ConnectRooms();
-    (Map, InputHandler, EntityManager) Build();
+    ILevelContext Build();
 }

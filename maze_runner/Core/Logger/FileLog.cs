@@ -11,6 +11,7 @@ public class FileLog : IMessageLog
         _filePath = Path.Combine(config.LogDirectoryPath, fileName);
         
         Directory.CreateDirectory(config.LogDirectoryPath);
+        File.Create(_filePath).Close();
     }
 
     public void Log(string message)

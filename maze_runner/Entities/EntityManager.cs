@@ -1,3 +1,4 @@
+using maze_runner.Core.Logger;
 using maze_runner.Dungeon.Map;
 
 namespace maze_runner.Entities;
@@ -83,6 +84,8 @@ public class EntityManager
                     if (cell.Count == 0) _spatialGrid.Remove(entity.Position);
                 }
                 _entities.RemoveAt(i);
+                
+                GameEvents.EnemyDefeated.Publish(new EnemyDefeatedEvent(entity.Name));
             }
         }
     }

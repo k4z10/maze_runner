@@ -6,6 +6,4 @@ public interface IGameContext
 {
     public ILevelContext CurrentLevel { get; }
     public GameConfig Config { get; }
-    public EventBus EventBus { get; }
-    public IMessageLog Logger { get; }
 }

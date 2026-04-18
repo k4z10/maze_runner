@@ -1,5 +1,6 @@
 using maze_runner.Commands.Core;
 using maze_runner.Commands.Player;
+using maze_runner.Core;
 using maze_runner.Entities;
 using maze_runner.Entities.Combat;
 using maze_runner.Entities.Mobs;
@@ -14,12 +15,10 @@ using Map;
 
 public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
 {
-    private Map _map = new();
-    private readonly List<Room> _rooms = new();
-    private Random _random = new();
-    private List<(int, int)> _spawnableCords = new();
-    private InputHandler _inputHandler = new();
-    private EntityManager _entityManager = new();
+    private readonly List<Room> _rooms = [];
+    private readonly Random _random = new();
+    private readonly List<(int, int)> _spawnableCords = [];
+    private readonly LevelContext _ctx = new(new Map(), new InputHandler(), new EntityManager());
 
     // Add new potential items to spawn
     private readonly IReadOnlyList<Item> _weaponsProt = [new Knife(), new LongSword(), new Sword(), new Cubix()];
@@ -27,58 +26,58 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
 
     public IModifierDungeonBuilder CreateEmptyDungeon(int width, int height)
     {
-        _map = new Map(height, width);
+        _ctx.Map = new Map(height, width);
 
-        for (int i = 0; i < _map.Rows; ++i)
-            for (int j = 0; j < _map.Cols; ++j)
-                _map.TrySetTile(i,j, new FloorTile());
+        for (int i = 0; i < _ctx.Map.Rows; ++i)
+            for (int j = 0; j < _ctx.Map.Cols; ++j)
+                _ctx.Map.TrySetTile(i,j, new FloorTile());
 
         for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
                 _spawnableCords.Add((x, y));
         
-        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0), "Move up");
-        _inputHandler.RegisterCommand(Key.S, new Move(1, 0), "Move down");
-        _inputHandler.RegisterCommand(Key.A, new Move(0, -1), "Move left");
-        _inputHandler.RegisterCommand(Key.D, new Move(0, 1), "Move right");
+        _ctx.InputHandler.RegisterCommand(Key.W, new Move(_ctx, -1, 0), "Move up");
+        _ctx.InputHandler.RegisterCommand(Key.S, new Move(_ctx, 1, 0), "Move down");
+        _ctx.InputHandler.RegisterCommand(Key.A, new Move(_ctx, 0, -1), "Move left");
+        _ctx.InputHandler.RegisterCommand(Key.D, new Move(_ctx, 0, 1), "Move right");
         
         return this;
     }
 
     public IModifierDungeonBuilder CreateFullDungeon(int width, int height)
     {
-        _map = new Map(height, width);
+        _ctx.Map = new Map(height, width);
         
-        for (int i = 0; i < _map.Rows; ++i)
-            for (int j = 0; j < _map.Cols; ++j)
-                _map.TrySetTile(i,j, new WallTile());
+        for (int i = 0; i < _ctx.Map.Rows; ++i)
+            for (int j = 0; j < _ctx.Map.Cols; ++j)
+                _ctx.Map.TrySetTile(i,j, new WallTile());
         
         _spawnableCords.Clear();
         
-        _inputHandler.RegisterCommand(Key.W, new Move(-1, 0), "Move up");
-        _inputHandler.RegisterCommand(Key.S, new Move(1, 0), "Move down");
-        _inputHandler.RegisterCommand(Key.A, new Move(0, -1), "Move left");
-        _inputHandler.RegisterCommand(Key.D, new Move(0, 1), "Move right");
+        _ctx.InputHandler.RegisterCommand(Key.W, new Move(_ctx, -1, 0), "Move up");
+        _ctx.InputHandler.RegisterCommand(Key.S, new Move(_ctx, 1, 0), "Move down");
+        _ctx.InputHandler.RegisterCommand(Key.A, new Move(_ctx, 0, -1), "Move left");
+        _ctx.InputHandler.RegisterCommand(Key.D, new Move(_ctx, 0, 1), "Move right");
         
         return this;
     }
 
     public IModifierDungeonBuilder AddCentralRoom(int width, int height, bool secure)
     {
-        int x = (_map.Cols - width) / 2;
-        int y = (_map.Rows - height) / 2;
+        int x = (_ctx.Map.Cols - width) / 2;
+        int y = (_ctx.Map.Rows - height) / 2;
 
         var central = new Room(x, y, width, height);
         CraveRoom(central);
         _rooms.Add(central);
 
         var boss = new MainBoss();
-        boss.Position = ((_map.Rows - 1) / 2, (_map.Cols - 1) / 2);
-        _entityManager.AddEntity(boss);
+        boss.Position = ((_ctx.Map.Rows - 1) / 2, (_ctx.Map.Cols - 1) / 2);
+        if (secure) _ctx.EntityManager.AddEntity(boss);
         
-        _inputHandler.RegisterCommand(KeyCode.Z, new Attack(new NormalAttack()), "Perform -normal- attack");
-        _inputHandler.RegisterCommand(KeyCode.X, new Attack(new StealthAttack()), "Perform -stealth- attack");
-        _inputHandler.RegisterCommand(KeyCode.C, new Attack(new MagicAttack()), "Perform -magic- attack");
+        _ctx.InputHandler.RegisterCommand(KeyCode.Z, new Attack(_ctx, new NormalAttack()), "Perform -normal- attack");
+        _ctx.InputHandler.RegisterCommand(KeyCode.X, new Attack(_ctx, new StealthAttack()), "Perform -stealth- attack");
+        _ctx.InputHandler.RegisterCommand(KeyCode.C, new Attack(_ctx, new MagicAttack()), "Perform -magic- attack");
         
         return this;
     }
@@ -91,8 +90,8 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             int width = _random.Next(3, 7);
             int height = _random.Next(3, 7);
             
-            int x = _random.Next(1, _map.Cols - width - 1);
-            int y = _random.Next(1, _map.Rows - height - 1);
+            int x = _random.Next(1, _ctx.Map.Cols - width - 1);
+            int y = _random.Next(1, _ctx.Map.Rows - height - 1);
             
             var room = new Room(x, y, width, height);
             if (!_rooms.Any(r => r.Intersects(room)))
@@ -107,7 +106,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
 
     public IModifierDungeonBuilder AddStartingRoom()
     {
-        var (row, col) = _map.GetSpawningPosition();
+        var (row, col) = _ctx.Map.GetSpawningPosition();
         var spawnRoom = new Room(col, row, 2, 2);
         CraveRoom(spawnRoom);
         _rooms.Add(spawnRoom);
@@ -121,13 +120,13 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
             var prototype = _weaponsProt[_random.Next(_weaponsProt.Count)];
             
-            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(new SharpnessModifier(prototype.Clone())));
+            _ctx.Map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(new SharpnessModifier(prototype.Clone())));
         }
 
-        _inputHandler.RegisterCommand(Key.E, new PickUp(), "Pick item from the ground");
-        _inputHandler.RegisterCommand(Key.Q, new Drop(), "Drop selected item from inventory");
-        _inputHandler.RegisterCommand(Key.F, new Equip(), "Equip selected item");
-        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip(), "Unequip item (from Hands)");
+        _ctx.InputHandler.RegisterCommand(Key.E, new PickUp(_ctx), "Pick item from the ground");
+        _ctx.InputHandler.RegisterCommand(Key.Q, new Drop(_ctx), "Drop selected item from inventory");
+        _ctx.InputHandler.RegisterCommand(Key.F, new Equip(_ctx), "Equip selected item");
+        _ctx.InputHandler.RegisterCommand(Key.F.WithShift, new Unequip(_ctx), "Unequip item (from Hands)");
         
         return this;
     }
@@ -139,21 +138,21 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
             var prototype = _uselessItemsProt[_random.Next(_uselessItemsProt.Count)];
             
-            _map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(prototype.Clone()));
+            _ctx.Map.GetTile(randomCords.Item2, randomCords.Item1).AddItem(new UnluckyModifier(prototype.Clone()));
         }
         var rC = _spawnableCords[_random.Next(_spawnableCords.Count)];
-        _map.GetTile(rC.Item2, rC.Item1).AddItem(new KnowledgeModifier(new Feather()));
+        _ctx.Map.GetTile(rC.Item2, rC.Item1).AddItem(new KnowledgeModifier(new Feather()));
         
 
-        _inputHandler.RegisterCommand(Key.E, new PickUp(), "Pick item from the ground");
-        _inputHandler.RegisterCommand(Key.Q, new Drop(), "Drop selected item from inventory");
-        _inputHandler.RegisterCommand(Key.F, new Equip(), "Equip selected item");
-        _inputHandler.RegisterCommand(Key.F.WithShift, new Unequip(), "Unequip item (from Hands)");
+        _ctx.InputHandler.RegisterCommand(Key.E, new PickUp(_ctx), "Pick item from the ground");
+        _ctx.InputHandler.RegisterCommand(Key.Q, new Drop(_ctx), "Drop selected item from inventory");
+        _ctx.InputHandler.RegisterCommand(Key.F, new Equip(_ctx), "Equip selected item");
+        _ctx.InputHandler.RegisterCommand(Key.F.WithShift, new Unequip(_ctx), "Unequip item (from Hands)");
         
         return this;
     }
 
-    public (Map, InputHandler, EntityManager) Build() => (_map, _inputHandler, _entityManager);
+    public ILevelContext Build() => _ctx; 
 
     public IModifierDungeonBuilder ConnectRooms()
     {
@@ -184,7 +183,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         int end = Math.Max(x1, x2);
         for (int x = start; x <= end; ++x)
         {
-            _map.TrySetTile(y, x, new FloorTile());
+            _ctx.Map.TrySetTile(y, x, new FloorTile());
             _spawnableCords.Add((x, y));
         }
     }
@@ -195,7 +194,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         int end = Math.Max(y1, y2);
         for (int y = start; y <= end; ++y)
         {
-            _map.TrySetTile(y, x, new FloorTile());
+            _ctx.Map.TrySetTile(y, x, new FloorTile());
             _spawnableCords.Add((x, y));
         }
     }
@@ -205,7 +204,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         for (int i = room.Y; i < room.Y + room.Height; ++i)
             for (int j = room.X; j < room.X + room.Width; ++j)
             {
-                if (!_map.TrySetTile(i, j, new FloorTile()))
+                if (!_ctx.Map.TrySetTile(i, j, new FloorTile()))
                     continue;
                 _spawnableCords.Add((j, i));
             }

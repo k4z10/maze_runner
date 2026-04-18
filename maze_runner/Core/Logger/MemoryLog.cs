@@ -8,6 +8,9 @@ public class MemoryLog : IMessageLog
 
     public void Log(string message)
     {
-        Messages.Add($"[{DateTime.Now:hh:mm:ss}] {message}");
+        Messages.Insert(0, $"[{DateTime.Now:hh:mm:ss}] {message}");
+        
+        if (Messages.Count > 100)
+            Messages.RemoveAt(Messages.Count - 1);
     }
 }
