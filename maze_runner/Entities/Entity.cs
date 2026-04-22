@@ -15,11 +15,12 @@ public abstract class Entity(int maxHealth)
     public abstract char Symbol { get; }
     public virtual string Name { get; set; } = "Entity";
 
-    public void TakeDamage(int damage, int defense)
+    public int TakeDamage(int damage, int defense)
     {
         int realDamage = Math.Max(0, damage - defense);
         Health -= realDamage;
         if (Health < 0) Health = 0;
+        return realDamage;
     }
 }
 
