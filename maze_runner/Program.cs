@@ -13,10 +13,11 @@ static class Program
     {
         var config = ConfigLoader.Load("config.json");
         var player = new Player();
+
+        var memoryLogger = new MemoryLogger();
+        UniversalLogChannel.ConnectLogger(new CompositeLogger(new FileLogger(config), memoryLogger));
         
-        GameEvents.LogBridge(new FileLog(config));
-        
-        var engine = new GameEngine(player, config);
+        var engine = new GameEngine(player, config, memoryLogger);
         engine.LoadLevel(new LibraryTheme());
         // engine.LoadLevel(new TestDungeonStrategy());
         engine.Run();

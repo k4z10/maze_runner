@@ -11,7 +11,7 @@ public class GameEngine : IGameContext
 {
     public GameConfig Config { get; }
     public ILevelContext CurrentLevel { get; private set; }
-    public MemoryLog Logs { get; private set; }
+    public MemoryLogger Logs { get; private set; }
 
     public InputHandler GlobalInput { get; } = new();
     
@@ -19,12 +19,10 @@ public class GameEngine : IGameContext
     private readonly Player _player;
     private readonly DungeonDirector _director = new();
 
-    public GameEngine(Player player, GameConfig config)
+    public GameEngine(Player player, GameConfig config, MemoryLogger logger)
     {
         Config = config;
-        Logs = new MemoryLog();
-        GameEvents.LogBridge(Logs);
-        
+        Logs = logger;
         _player = player;
         _player.Name = config.PlayerName;
         CurrentLevel = new LevelContext(new Map(), new InputHandler(), new EntityManager());

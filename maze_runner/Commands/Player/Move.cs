@@ -17,7 +17,7 @@ public class Move(ILevelContext ctx, int dx, int dy) : ICommand
         }
         else
         {
-            GameEvents.WallBumped.Publish(new WallBumpedEvent());
+            EventTopic<WallBumpedEvent>.Publish(new WallBumpedEvent());
         }
     }
 }

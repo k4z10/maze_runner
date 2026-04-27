@@ -26,6 +26,6 @@ public class PickUp(ILevelContext ctx) : ICommand
         {
             ctx.EntityManager.Player.Inventory.Items.Add(item);
         }
-        GameEvents.ItemPickedUp.Publish(new ItemPickedUpEvent(item.Name));
+        EventTopic<ItemPickedUpEvent>.Publish(new ItemPickedUpEvent(item.Name));
     }
 }

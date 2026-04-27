@@ -1,17 +1,18 @@
 namespace maze_runner.Core.Logger;
 
-public class EventTopic<T> where T : IEvent
+public static class EventTopic<T> where T : IEvent
 {
-    private readonly List<Action<T>> _subscribers = new();
+    private static readonly List<Action<T>> Subscribers = new();
+    public static void Subscribe(Action<T> handler) => Subscribers.Add(handler); 
 
-    public void Subscribe(Action<T> handler)
+    public static void Publish(T gameEvent)
     {
-        _subscribers.Add(handler); 
-    }
-
-    public void Publish(T gameEvent)
-    {
-        foreach (var handler in _subscribers)
+        foreach (var handler in Subscribers)
             handler(gameEvent);
+
+        if (gameEvent.LogMessage != null)
+        {
+            UniversalLogChannel.Publish(gameEvent.LogMessage);
+        }
     }
 }

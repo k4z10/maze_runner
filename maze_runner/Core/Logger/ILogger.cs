@@ -1,6 +1,6 @@
 namespace maze_runner.Core.Logger;
 
-public interface IMessageLog
+public interface ILogger
 {
     void Log(string message); 
 }

@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace maze_runner.Core.Logger;
 
-public class MemoryLog : IMessageLog
+public class MemoryLogger : ILogger
 {
     public ObservableCollection<string> Messages { get; } = new();
 

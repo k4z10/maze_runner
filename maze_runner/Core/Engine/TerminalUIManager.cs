@@ -110,8 +110,8 @@ public class TerminalUIManager : IGameUIManager
     {
         if (!Engine.GlobalInput.ProcessInput(e.KeyCode))
             if (!Engine.CurrentLevel.InputHandler.ProcessInput(e.KeyCode))
-                GameEvents.UnknownInput.Publish(new UnknownInputEvent(e.KeyCode));
-        
+                EventTopic<UnknownInputEvent>.Publish(new UnknownInputEvent(e));
+
         e.Handled = true;
         Render();
 

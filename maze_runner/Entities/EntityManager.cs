@@ -85,7 +85,7 @@ public class EntityManager
                 }
                 _entities.RemoveAt(i);
                 
-                GameEvents.EnemyDefeated.Publish(new EnemyDefeatedEvent(entity.Name));
+                EventTopic<EnemyDefeatedEvent>.Publish(new EnemyDefeatedEvent(entity.Name));
             }
         }
     }
