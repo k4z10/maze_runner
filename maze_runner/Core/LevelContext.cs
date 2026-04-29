@@ -4,11 +4,20 @@ namespace maze_runner.Core;
 using Commands.Core;
 using Dungeon.Map;
 
-public class LevelContext(Map map, InputHandler inputHandler, EntityManager entityManager, string description = "", string name = "Level") : ILevelContext
+public class LevelContext : ILevelContext
 {
-    public Map Map { get; set; } = map;
-    public InputHandler InputHandler { get; set; } = inputHandler;
-    public EntityManager EntityManager { get; set; } = entityManager;
-    public string Description { get; set; } =  description;
-    public string LevelName { get; set; } = name;
+    public Map Map { get; set; }
+    public InputHandler InputHandler { get; set; }
+    public EntityManager EntityManager { get; set; }
+    public EventBus EventBus { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string LevelName { get; set; } = string.Empty;
+
+    public LevelContext()
+    {
+        Map = new Map();
+        InputHandler = new InputHandler();
+        EventBus = new EventBus();
+        EntityManager = new EntityManager(EventBus);
+    }
 }

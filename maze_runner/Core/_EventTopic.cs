@@ -1,6 +1,8 @@
-namespace maze_runner.Core.Logger;
+using maze_runner.Core.Logger;
 
-public static class EventTopic<T> where T : IEvent
+namespace maze_runner.Core;
+
+public static class _EventTopic<T> where T : IEvent
 {
     private static readonly List<Action<T>> Subscribers = new();
     public static void Subscribe(Action<T> handler) => Subscribers.Add(handler); 

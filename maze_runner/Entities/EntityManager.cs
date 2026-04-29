@@ -1,9 +1,10 @@
+using maze_runner.Core;
 using maze_runner.Core.Logger;
 using maze_runner.Dungeon.Map;
 
 namespace maze_runner.Entities;
 
-public class EntityManager
+public class EntityManager(IEventPublisher eventPublisher)
 {
     private readonly List<Entity> _entities = new();
     
@@ -51,7 +52,7 @@ public class EntityManager
         return null; 
     }
 
-    public void MoveEntity(Entity entity, int newRow, int newCol)
+    public void MoveEntity(Entity entity, int newRow, int newCol, Map map)
     {
         if (_spatialGrid.TryGetValue(entity.Position, out var oldCell))
         {
@@ -85,7 +86,7 @@ public class EntityManager
                 }
                 _entities.RemoveAt(i);
                 
-                EventTopic<EnemyDefeatedEvent>.Publish(new EnemyDefeatedEvent(entity.Name));
+                eventPublisher.Publish(new EnemyDefeatedEvent(entity.Name));
             }
         }
     }

@@ -5,7 +5,7 @@ namespace maze_runner.Dungeon;
 
 public class DungeonDirector
 {
-    public ILevelContext ConstructLevel(IDungeonThemeFactory theme, int width, int height)
+    public ILevelContext ConstructLevel(IDungeonThemeFactory theme, int itemsCount, int enemiesCount, int width = 40, int height = 20)
     {
         var builder = new ProcDungeonBuilder();
 
@@ -13,8 +13,8 @@ public class DungeonDirector
         var topologyModifier = strategy.GenerateTopology(builder, width, height);
 
         var levelContext = topologyModifier
-            .PopulateItems(theme.CreateItemPool(), count: 10)
-            .PopulateEnemies(theme.CreateEnemyPool(), count: 1)
+            .PopulateItems(theme.CreateItemPool(), count: itemsCount)
+            .PopulateEnemies(theme.CreateEnemyPool(), count: enemiesCount)
             .PlaceArtifact(theme.GetArtifact())
             .GetLevelContext();
 

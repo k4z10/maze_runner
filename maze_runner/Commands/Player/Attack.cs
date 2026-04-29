@@ -24,11 +24,11 @@ public class Attack(ILevelContext ctx, IAttackStrategy attackType) : ICommand
             (finalDamage, finalDefense) = attackType.ExecuteNonWeapon(player.CurrentStats);
         
         enemy.TakeDamage(finalDamage, enemy.BaseDefense);
-        EventTopic<AttackResolvedEvent>.Publish(new AttackResolvedEvent(player.Name, enemy.Name, finalDamage));
+        ctx.EventBus.Publish(new AttackResolvedEvent(player.Name, enemy.Name, finalDamage));
         if (enemy.IsAlive)
         {
             int damageTaken = player.TakeDamage(enemy.BaseDamage, finalDefense);
-            EventTopic<AttackResolvedEvent>.Publish(new AttackResolvedEvent(enemy.Name, player.Name, damageTaken));
+            ctx.EventBus.Publish(new AttackResolvedEvent(enemy.Name, player.Name, damageTaken));
         }
 
         ctx.EntityManager.RemoveDeadEntities();

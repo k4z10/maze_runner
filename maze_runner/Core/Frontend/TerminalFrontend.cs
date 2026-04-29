@@ -1,15 +1,16 @@
 using maze_runner.Commands.TerminalUI;
+using maze_runner.Core.Engine;
 using maze_runner.Core.Logger;
 using maze_runner.Dungeon.Strategies;
 using maze_runner.Dungeon.Themes.Library;
 using maze_runner.Items.Models;
 
-namespace maze_runner.Core.Engine;
+namespace maze_runner.Core.Frontend;
 using Commands.Core;
 using Terminal.Gui;
 using System.Text;
 
-public class TerminalUIManager : IGameUIManager
+public class TerminalFrontend : IGameFrontend
 {
     private Window _mainWindow           = new();
     private Label _mapLabel              = new();
@@ -39,20 +40,21 @@ public class TerminalUIManager : IGameUIManager
     
     public GameEngine Engine { get; }
 
-    public TerminalUIManager(GameEngine engine)
+    public TerminalFrontend(GameEngine engine)
     {
         Engine = engine;
 
-        Engine.GlobalInput.RegisterCommand((Key)'?', new ToggleHelp(this), "Toggle help menu");
-        Engine.GlobalInput.RegisterCommand(Key.Esc, new Quit(this), "Quit game");
-        Engine.GlobalInput.RegisterCommand(Key.I, new ToggleItemInfo(this), "Toggle in-game info overlay");
-        Engine.GlobalInput.RegisterCommand(Key.Tab, new Reload(this), "Reload game");
-        Engine.GlobalInput.RegisterCommand(Key.J, new ToggleJournal(this), "Toggle journal overlay" );
+        Engine.GlobalInput.RegisterCommand('?', new ToggleHelp(this), "Toggle help menu");
+        Engine.GlobalInput.RegisterCommand('i', new ToggleItemInfo(this), "Toggle in-game info overlay");
+        Engine.GlobalInput.RegisterCommand((char)9, new Reload(this), "Reload game");
+        Engine.GlobalInput.RegisterCommand('j', new ToggleJournal(this), "Toggle journal overlay" );
     }
 
 
     public void InitializeAndRun()
     {
+        
+        
         Application.Init();
 
         ColorScheme scheme = new ColorScheme()
@@ -73,45 +75,39 @@ public class TerminalUIManager : IGameUIManager
             ColorScheme = scheme,
         };
         
-
-        
-        
         BuildUI();
+
+        _mainWindow.Loaded += (sender, args) =>
+        {
+            Render();
+            UpdateUIContext();
+        };
         
         _mainWindow.KeyDown += HandleKeyboard!;
         _mainWindow.MouseClick += HandleMouse!;
 
-        HowToPlayOverlay();
-        Render();
         Application.Run(_mainWindow);
         
         _mainWindow.Dispose();
         Application.Shutdown();        
     }
 
-    public void Render()
-    {
-        HowToPlayOverlay();
-        JournalOverlay();
-        TileInfoOverlay();
-        ItemInfoOverlay();
-        MapDisplay();
-        InventoryDisplay();
-        _mainWindow.SetNeedsDraw();
-    }
-    
     public void ToggleItemInfo() => _itemInfoToggle ^= 1;
     public void ToggleHelp() => _howToPlayOverlayToggle ^= 1;
     public void ToggleJournal() => _journalOverlayToggle ^= 1;
     public void Quit() => Application.RequestStop();
-    public void Reload() => Engine.LoadLevel(new LibraryTheme());
+    public void Reload() => Engine.LoadLevel(new LibraryTheme(), 10, 10);
 
     private void HandleKeyboard(object sender, Key e)
     {
-        if (!Engine.GlobalInput.ProcessInput(e.KeyCode))
-            if (!Engine.CurrentLevel.InputHandler.ProcessInput(e.KeyCode))
-                EventTopic<UnknownInputEvent>.Publish(new UnknownInputEvent(e));
-
+        char input;
+        if (e.AsRune.IsAscii)
+            input = (char)e.AsRune.Value;
+        else
+            input = (char)((uint)e.KeyCode & 0xFFFF);
+        
+        Engine.EnqueueInput(input);
+        
         e.Handled = true;
         Render();
 
@@ -122,6 +118,17 @@ public class TerminalUIManager : IGameUIManager
             player.Health = player.MaxHealth;
             Render();
         }
+    }
+    
+    void Render()
+    {
+        HowToPlayOverlay();
+        JournalOverlay();
+        TileInfoOverlay();
+        ItemInfoOverlay();
+        MapDisplay();
+        InventoryDisplay();
+        _mainWindow.SetNeedsDraw();
     }
     
     private void HandleMouse(object sender, MouseEventArgs args)
@@ -240,7 +247,6 @@ public class TerminalUIManager : IGameUIManager
     
     private void ItemInfoWrite(Item item)
     {
-        var selectedItem = item;
         string text = $"""
                        ({item.TileSymbol}) {item.Name}
                        {item.Description}
@@ -254,30 +260,30 @@ public class TerminalUIManager : IGameUIManager
                      Weight: {(weaponFeature.RequiredHands == 1 ? "Light" :"Heavy")}
                      """;
         }
-        
+
         _tooltipTextView.Text = text;
     }
 
     private void HowToPlayOverlay()
     {
-        if (_howToPlayOverlayToggle == 1)
-        {
-            var sb = new StringBuilder();
-            
-            sb.AppendLine("Level name: " + Engine.CurrentLevel.LevelName);
-            sb.AppendLine(Engine.CurrentLevel.Description);
-            sb.AppendLine();
-            sb.AppendLine("1. General\n" + Engine.GlobalInput.ToString());
-            sb.AppendLine();
-            sb.AppendLine("2. Ingame actions\n" + Engine.CurrentLevel.InputHandler.ToString());
-            
-            _howToPlayTextView.Text = sb.ToString();
-            _howToPlayOverlay.Visible = true;
-        }
-        else
-        {
-            _howToPlayOverlay.Visible = false;
-        }
+        _howToPlayOverlay.Visible = _howToPlayOverlayToggle == 1;
+    }
+
+    private void UpdateUIContext()
+    {
+        _howToPlayOverlay.Visible = true;
+        
+        var sb = new StringBuilder();
+        
+        sb.AppendLine("Level name: " + Engine.CurrentLevel.LevelName);
+        sb.AppendLine(Engine.CurrentLevel.Description);
+        sb.AppendLine();
+        sb.AppendLine("1. General\n" + Engine.GlobalInput.ToString());
+        sb.AppendLine();
+        sb.AppendLine("2. Ingame actions\n" + Engine.CurrentLevel.InputHandler.ToString());
+        
+        _howToPlayTextView.Text = sb.ToString();
+        HowToPlayOverlay();
     }
 
     private void JournalOverlay()
@@ -298,6 +304,7 @@ public class TerminalUIManager : IGameUIManager
         else
         {
             _journalView.Visible = false;
+            _journalTextView.Text = string.Empty;
         }
     }
 
@@ -457,7 +464,7 @@ public class TerminalUIManager : IGameUIManager
         {
             X = 0,
             Y = Pos.Bottom(handsFrame),
-            Width = Dim.Fill() - attributesFrameWidth,
+            Width = Dim.Func(() => Math.Max(1, (inventoryFrame.Frame.Width > 0 ? inventoryFrame.Frame.Width : 100) - attributesFrameWidth)),
             Height = 8,
             Title = " Inventory ",
             BorderStyle = LineStyle.Rounded
@@ -473,7 +480,7 @@ public class TerminalUIManager : IGameUIManager
         {
             X = 20,
             Y = -1,
-            Width = Dim.Fill(),
+            Width = Dim.Func(() => Math.Max(1, itemsFrame.Frame.Width - 20)),
             Height = Dim.Height(itemsFrame),
             BorderStyle = LineStyle.Rounded,
             Visible = false,
@@ -550,7 +557,7 @@ public class TerminalUIManager : IGameUIManager
         {
             X = Pos.Right(accountFrame),
             Y = accountFrame.Y,
-            Width = Dim.Fill() - attributesFrameWidth,
+            Width = Dim.Fill() - attributesFrameWidth + 2, 
             Height = Dim.Fill(),
             Title = " Journal ",
             BorderStyle = LineStyle.Rounded
@@ -562,9 +569,9 @@ public class TerminalUIManager : IGameUIManager
             AllowsMarking = false,
         };
         journalFrame.Add(journalListView);
-        journalListView.SetSource(Engine.Logs.Messages);
+        journalListView.SetSource(Engine.Logger.Messages);
         
-        inventoryFrame.Add(handsFrame, itemsFrame, attributesFrame, accountFrame, journalFrame);
+        inventoryFrame.Add(handsFrame, itemsFrame, journalFrame, attributesFrame, accountFrame);
         
         _howToPlayOverlay = new View()
         {
@@ -582,7 +589,6 @@ public class TerminalUIManager : IGameUIManager
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            WordWrap = true,
             ReadOnly = true,
         };
         _howToPlayOverlay.Add(_howToPlayTextView);

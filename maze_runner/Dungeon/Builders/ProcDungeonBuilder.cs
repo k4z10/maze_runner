@@ -18,12 +18,12 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
     private readonly List<Room> _rooms = [];
     private readonly Random _random = new();
     private readonly List<(int, int)> _spawnableCords = [];
-    private readonly LevelContext _ctx = new(new Map(), new InputHandler(), new EntityManager());
+    private readonly LevelContext _ctx = new(); 
 
     // Add new potential items to spawn
     private readonly IReadOnlyList<Item> _weaponsProt = [new Knife(), new LongSword(), new Sword(), new Cubix()];
     private readonly IReadOnlyList<Item> _uselessItemsProt = [new Bottle(), new Feather(), new Stick()];
-
+    
     public IModifierDungeonBuilder CreateEmptyDungeon(int width, int height)
     {
         _ctx.Map = new Map(height, width);
@@ -36,10 +36,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             for (int y = 0; y < height; y++)
                 _spawnableCords.Add((x, y));
         
-        _ctx.InputHandler.RegisterCommand(Key.W, new Move(_ctx, -1, 0), "Move up");
-        _ctx.InputHandler.RegisterCommand(Key.S, new Move(_ctx, 1, 0), "Move down");
-        _ctx.InputHandler.RegisterCommand(Key.A, new Move(_ctx, 0, -1), "Move left");
-        _ctx.InputHandler.RegisterCommand(Key.D, new Move(_ctx, 0, 1), "Move right");
+        _ctx.InputHandler.RegisterCommand('w', new Move(_ctx, -1, 0), "Move up");
+        _ctx.InputHandler.RegisterCommand('s', new Move(_ctx, 1, 0), "Move down");
+        _ctx.InputHandler.RegisterCommand('a', new Move(_ctx, 0, -1), "Move left");
+        _ctx.InputHandler.RegisterCommand('d', new Move(_ctx, 0, 1), "Move right");
         
         return this;
     }
@@ -54,10 +54,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         
         _spawnableCords.Clear();
         
-        _ctx.InputHandler.RegisterCommand(Key.W, new Move(_ctx, -1, 0), "Move up");
-        _ctx.InputHandler.RegisterCommand(Key.S, new Move(_ctx, 1, 0), "Move down");
-        _ctx.InputHandler.RegisterCommand(Key.A, new Move(_ctx, 0, -1), "Move left");
-        _ctx.InputHandler.RegisterCommand(Key.D, new Move(_ctx, 0, 1), "Move right");
+        _ctx.InputHandler.RegisterCommand('w', new Move(_ctx, -1, 0), "Move up");
+        _ctx.InputHandler.RegisterCommand('s', new Move(_ctx, 1, 0), "Move down");
+        _ctx.InputHandler.RegisterCommand('a', new Move(_ctx, 0, -1), "Move left");
+        _ctx.InputHandler.RegisterCommand('d', new Move(_ctx, 0, 1), "Move right");
         
         return this;
     }
@@ -120,10 +120,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _ctx.Map.GetTile(randomCords.Item1, randomCords.Item2).AddItem(pool.GetItem());
         }
 
-        _ctx.InputHandler.RegisterCommand(Key.E, new PickUp(_ctx), "Pick item from the ground");
-        _ctx.InputHandler.RegisterCommand(Key.Q, new Drop(_ctx), "Drop selected item from inventory");
-        _ctx.InputHandler.RegisterCommand(Key.F, new Equip(_ctx), "Equip selected item");
-        _ctx.InputHandler.RegisterCommand(Key.F.WithShift, new Unequip(_ctx), "Unequip item (from Hands)");
+        _ctx.InputHandler.RegisterCommand('e', new PickUp(_ctx), "Pick item from the ground");
+        _ctx.InputHandler.RegisterCommand('q', new Drop(_ctx), "Drop selected item from inventory");
+        _ctx.InputHandler.RegisterCommand('f', new Equip(_ctx), "Equip selected item");
+        _ctx.InputHandler.RegisterCommand('F', new Unequip(_ctx), "Unequip item (from Hands)");
         
         return this;
     }
@@ -139,9 +139,9 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _ctx.EntityManager.AddEntity(enemy);
         }
         
-        _ctx.InputHandler.RegisterCommand(KeyCode.Z, new Attack(_ctx, new NormalAttack()), "Perform -normal- attack");
-        _ctx.InputHandler.RegisterCommand(KeyCode.X, new Attack(_ctx, new StealthAttack()), "Perform -stealth- attack");
-        _ctx.InputHandler.RegisterCommand(KeyCode.C, new Attack(_ctx, new MagicAttack()), "Perform -magic- attack");
+        _ctx.InputHandler.RegisterCommand('z', new Attack(_ctx, new NormalAttack()), "Perform -normal- attack");
+        _ctx.InputHandler.RegisterCommand('x', new Attack(_ctx, new StealthAttack()), "Perform -stealth- attack");
+        _ctx.InputHandler.RegisterCommand('c', new Attack(_ctx, new MagicAttack()), "Perform -magic- attack");
         
         return this;
     }

@@ -1,3 +1,5 @@
+using maze_runner.Entities;
+
 namespace maze_runner.Dungeon.Map;
 using Items.Models;
 public abstract class Tile

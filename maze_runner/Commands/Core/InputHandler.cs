@@ -1,18 +1,14 @@
 using System.Text;
-using maze_runner.Core.Logger;
-
 namespace maze_runner.Commands.Core;
-using maze_runner.Core;
-using Terminal.Gui;
 
 public class InputHandler
 {
-    private readonly Dictionary<Key, (ICommand command, string description)> _keyBindings = new();
+    private readonly Dictionary<char, (ICommand command, string description)> _keyBindings = new();
     
-    public void RegisterCommand(Key key, ICommand command, string description = "") 
+    public void RegisterCommand(char key, ICommand command, string description = "") 
         => _keyBindings[key] = (command, description);
 
-    public bool ProcessInput(Key key)
+    public bool ProcessInput(char key)
     {
         if (_keyBindings.TryGetValue(key, out var b))
         {
@@ -27,7 +23,7 @@ public class InputHandler
     {
         var sb = new StringBuilder();
         foreach (var kvp in _keyBindings)
-            sb.AppendLine($"[{kvp.Key.ToString()}] - {kvp.Value.description}");
+            sb.AppendLine($"[{kvp.Key}] - {kvp.Value.description}");
         return sb.ToString();
     }
 }

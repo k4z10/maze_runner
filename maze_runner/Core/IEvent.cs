@@ -1,6 +1,4 @@
-using Terminal.Gui;
-
-namespace maze_runner.Core.Logger;
+namespace maze_runner.Core;
 
 public interface IEvent
 {
@@ -32,7 +30,12 @@ public record EnemyDefeatedEvent(string EnemyName) : IEvent
     public string? LogMessage => $"{EnemyName} was defeated";
 }
 
-public record UnknownInputEvent(Key Key) : IEvent
+public record UnknownInputEvent(char Key) : IEvent
 {
     public string? LogMessage => $"Unknown input: {Key}"; 
+}
+
+public record TriggerQuit() : IEvent
+{
+    public string? LogMessage => null;
 }

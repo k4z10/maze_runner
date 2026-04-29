@@ -16,7 +16,7 @@ public class Equip(ILevelContext ctx) : ICommand
 
         if (inventory.TryEquip(item))
         {
-            EventTopic<ItemEquippedEvent>.Publish(new ItemEquippedEvent(item.Name));
+            ctx.EventBus.Publish(new ItemEquippedEvent(item.Name));
         }
     }
 }

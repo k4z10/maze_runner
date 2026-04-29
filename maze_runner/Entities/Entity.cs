@@ -1,3 +1,4 @@
+using maze_runner.Entities.Mobs;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace maze_runner.Entities;
@@ -22,6 +23,9 @@ public abstract class Entity(int maxHealth)
         if (Health < 0) Health = 0;
         return realDamage;
     }
+
+    public virtual IGoblin? GetGoblin() => null;
+    public virtual ISkeleton? GetSkeleton() => null;
 }
 
 public record struct Attributes(int Strength, int Dexterity, int Resistance, int Stamina, int Luck, int Wisdom);
