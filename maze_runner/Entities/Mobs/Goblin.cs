@@ -21,6 +21,7 @@ public class Goblin : Mob
 
     protected override void Die()
     {
+        base.Die();
         _myTribe.ReportDeath(this);
     }
 

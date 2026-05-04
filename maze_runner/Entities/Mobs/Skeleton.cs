@@ -21,6 +21,7 @@ public class Skeleton : Mob
 
     protected override void Die()
     {
+        base.Die();
         _myTribe.ReportDeath(this);
     }
 
