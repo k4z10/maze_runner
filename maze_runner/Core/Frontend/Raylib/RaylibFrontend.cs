@@ -42,6 +42,7 @@ public class RaylibFrontend : IGameFrontend
     // Zasoby graficzne
     private Font _uiFont;
     private const string FontPath = "./resources/fonts/JetBrainsMonoNerdFontMono-Medium.ttf";
+    private readonly Dictionary<string, Texture2D> _entityTextures = new();
 
     // Pamięć podręczna topologii UI (Spatial Cache)
     private readonly Dictionary<Rectangle, Item> _inventoryHitboxes = new();
@@ -70,6 +71,9 @@ public class RaylibFrontend : IGameFrontend
         
         // _uiFont = Raylib.GetFontDefault();
         _uiFont = Raylib.LoadFontEx(FontPath, 32, null, 0);
+        _entityTextures["player"] = Raylib.LoadTexture("./resources/assets/player.png");
+        _entityTextures["goblin"] = Raylib.LoadTexture("./resources/assets/goblin.png");
+        _entityTextures["skeleton"] = Raylib.LoadTexture("./resources/assets/skeleton.png");
 
         Raylib.SetTargetFPS(TargetFps);
 
@@ -210,10 +214,11 @@ public class RaylibFrontend : IGameFrontend
         {
             for (int c = 0; c < cols; c++)
             {
+                
                 var tile = level.Map.GetTile(r, c);
 
                 char symbol = tile.GetTileSymbol();
-                Color tileColor = _tileColors.GetValueOrDefault(symbol, Color.Magenta); 
+                Color tileColor = _tileColors.GetValueOrDefault(symbol, Color.Magenta);
 
                 int x = c * TileSize;
                 int y = r * TileSize;
@@ -222,9 +227,24 @@ public class RaylibFrontend : IGameFrontend
 
                 if (tile.Items.Count > 0)
                 {
-                    int itemOffset = TileSize / 4;
-                    int itemSize = TileSize / 2;
-                    Raylib.DrawRectangle(x + itemOffset, y + itemOffset, itemSize, itemSize, Color.Gold);
+                    var itemSymbol = symbol.ToString();
+                    int framePadding = 4;
+                    int frameSize = TileSize - (framePadding * 2);
+                    int frameX = x + framePadding;
+                    int frameY = y + framePadding;
+
+                    Raylib.DrawRectangle(frameX, frameY, frameSize, frameSize, new Color(20, 20, 25, 220));
+                    Raylib.DrawRectangleLines(frameX, frameY, frameSize, frameSize, _accentColor);
+
+                    float fontSize = frameSize * 0.8f;
+                    Vector2 textSize = Raylib.MeasureTextEx(_uiFont, itemSymbol, fontSize, 0f);
+                    
+                    Vector2 textPos = new Vector2(
+                        frameX + (frameSize / 2f) - (textSize.X / 2f),
+                        frameY + (frameSize / 2f) - (textSize.Y / 2f)
+                    );
+
+                    Raylib.DrawTextEx(_uiFont, itemSymbol, textPos, fontSize, 0f, _accentColor);
                 }
             }
         }
@@ -241,20 +261,32 @@ public class RaylibFrontend : IGameFrontend
 
             int x = entity.Position.Col * TileSize;
             int y = entity.Position.Row * TileSize;
-
-            Color entityColor = entity == entityManager.Player ? Color.Green : Color.Red;
-            Raylib.DrawCircle(x + TileSize / 2, y + TileSize / 2, TileSize / 2.2f, entityColor);
-
-            string symbol = entity.Symbol.ToString();
-            float fontSize = 20f;
-            Vector2 textSize = Raylib.MeasureTextEx(_uiFont, symbol, fontSize, 0f);
             
-            Vector2 textPos = new Vector2(
-                x + (TileSize / 2f) - (textSize.X / 2f),
-                y + (TileSize / 2f) - (textSize.Y / 2f)
-            );
+            Texture2D? currentTexture = null;
 
-            Raylib.DrawTextEx(_uiFont, symbol, textPos, fontSize, 0f, Color.RayWhite);
+            if (currentTexture.HasValue)
+            {
+                Rectangle sourceRec = new Rectangle(0, 0, currentTexture.Value.Width, currentTexture.Value.Height);
+                Rectangle destRec = new Rectangle(x, y, TileSize, TileSize);
+                Raylib.DrawTexturePro(currentTexture.Value, sourceRec, destRec, Vector2.Zero, 0f, Color.White);
+            }
+            else
+            {
+                
+                Raylib.DrawCircle(x + TileSize / 2, y + TileSize / 2, TileSize / 2.2f, Color.Red);
+                
+                string symbol = entity.Symbol.ToString();
+                float fontSize = 20f;
+                Vector2 textSize = Raylib.MeasureTextEx(_uiFont, symbol, fontSize, 0f);
+                
+                Vector2 textPos = new Vector2(
+                    x + (TileSize / 2f) - (textSize.X / 2f),
+                    y + (TileSize / 2f) - (textSize.Y / 2f)
+                );
+                Raylib.DrawTextEx(_uiFont, symbol, textPos, fontSize, 0f, Color.RayWhite);
+            }
+
+
         }
     }
     

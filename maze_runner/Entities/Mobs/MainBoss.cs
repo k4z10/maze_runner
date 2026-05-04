@@ -1,9 +1,13 @@
 namespace maze_runner.Entities.Mobs;
 
-public class MainBoss() : Entity(100)
+public class MainBoss : Entity
 {
+    public MainBoss(int maxHealth, (int, int) pos) : base("Boss", maxHealth)
+    {
+        BaseDamage = 10;
+        BaseDefense = 0;
+        Position = pos;
+    }
+
     public override char Symbol => '&';
-    public override string Name => "Main Boss";
-    public override int BaseDefense { get; protected set; } = 0;
-    public override int BaseDamage { get; protected set; } = 10;
 }

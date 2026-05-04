@@ -7,10 +7,11 @@ namespace maze_runner.Dungeon.Themes.Library;
 public class LibraryEnemyPool : IEnemyPool
 {
     private readonly WeightedPool<Entity> _pool = new();
+    private readonly GoblinTribe _goblinTribe = new();
 
     public LibraryEnemyPool()
     {
-        _pool.Add(() => new MainBoss(), 100);
+        _pool.Add(() => new Goblin(_goblinTribe), 1);
     }
 
     public Entity GetEntity() => _pool.Draw();

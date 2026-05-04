@@ -71,10 +71,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         CraveRoom(central);
         _rooms.Add(central);
 
-        var boss = new MainBoss
-        {
-            Position = ((_ctx.Map.Rows - 1) / 2, (_ctx.Map.Cols - 1) / 2)
-        };
+        var boss = new MainBoss(100, ((_ctx.Map.Rows - 1) / 2, (_ctx.Map.Cols - 1) / 2));
         if (secure) _ctx.EntityManager.AddEntity(boss);
 
         return this;

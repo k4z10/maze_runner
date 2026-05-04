@@ -13,7 +13,7 @@ static class Program
     static void Main(string[] args)
     {
         var config = ConfigLoader.Load("config.json");
-        var player = new Player();
+        var player = new Player(config.PlayerName);
 
         var memoryLogger = new MemoryLogger();
         UniversalLogChannel.ConnectLogger(new CompositeLogger(new FileLogger(config), memoryLogger));

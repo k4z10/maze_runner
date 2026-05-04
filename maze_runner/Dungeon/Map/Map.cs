@@ -25,6 +25,8 @@ public class Map(int rows = 0, int cols = 0)
     }
 
     public (int row, int col) GetSpawningPosition() => (0, 0);
+    
+    
 }
 
 public struct Room(int x, int y, int width, int height)

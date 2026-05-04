@@ -1,11 +1,29 @@
 namespace maze_runner.Entities.Mobs;
 
-class Skeleton(string name = "Skeleton", int maxHealth = 15, int baseDamage = 2, int baseDefense = 2) : Entity(maxHealth), ISkeleton
+public class Skeleton : Mob
 {
-    public override char Symbol => 's';
-    public override string Name => name;
-    public override int BaseDamage => baseDamage;
-    public override int BaseDefense => baseDefense;
+    private readonly SkeletonTribe _myTribe;
+    private int _rageModifer = 0;
 
-    public override ISkeleton? GetSkeleton() => this;
+    public override char Symbol => 'S';
+    public override int EffectiveDamage => Math.Max(0, BaseDamage + _rageModifer);
+
+    public Skeleton(SkeletonTribe tribe) : base("Skeleton", maxHealth: 10)
+    {
+        BaseDefense = 5;
+        BaseDamage = 1;
+        
+        _myTribe = tribe;
+        _myTribe.Register(this);
+    }
+
+    protected override void Die()
+    {
+        _myTribe.ReportDeath(this);
+    }
+
+    public void Enrage()
+    {
+        _rageModifer += 1;
+    }
 }

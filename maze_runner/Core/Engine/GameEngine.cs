@@ -7,6 +7,7 @@ using maze_runner.Entities;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using maze_runner.Dungeon.Themes.Cave;
 
 namespace maze_runner.Core.Engine;
 using Entities.Player;
@@ -26,6 +27,7 @@ public class GameEngine : IGameContext
     public InputHandler GlobalInput { get; } = new();
     
     private readonly IGameFrontend _uiManager;
+    private readonly EventBus _uiEventBus = new();
     private readonly Player _player;
     private readonly DungeonDirector _director = new();
 
@@ -34,20 +36,21 @@ public class GameEngine : IGameContext
         Config = config;
         Logger = logger;
         _player = player;
-        _player.Name = config.PlayerName;
         CurrentLevel = new LevelContext();
         CurrentLevel.EntityManager.RegisterPlayer(player);
-        _uiManager = new RaylibFrontend(this);
+        _uiManager = new TerminalFrontend(this, _uiEventBus);
     }
 
     public void EnqueueInput(char key) => _inputQueue.Enqueue(key);
     public void RequestQuit() => _isRunning = false;
     
-    public void LoadLevel(IDungeonThemeFactory theme, int items, int enemies, int width = 40, int height = 20)
+    public void LoadLevel(IDungeonThemeFactory theme, int itemsCount, int enemiesCount, int width = 40, int height = 20)
     {
-        CurrentLevel = _director.ConstructLevel(theme, items, enemies, width, height);
+        CurrentLevel = _director.ConstructLevel(theme, itemsCount, enemiesCount, width, height);
         CurrentLevel.EntityManager.RegisterPlayer(_player);
         _player.Position = CurrentLevel.Map.GetSpawningPosition();
+        
+        _uiEventBus.Publish(new LevelChanged());
     }
 
     public void Run()
@@ -55,8 +58,6 @@ public class GameEngine : IGameContext
         Task.Run(GameLoop);
         _uiManager.InitializeAndRun();
     }
-
-
 
     private void GameLoop()
     {
@@ -76,9 +77,9 @@ public class GameEngine : IGameContext
                 lastTime = currentTime;
                 
                 ProcessInput();
-
-                // Faza symulacji: Aktualizacja encji z uwzględnieniem upływu czasu (Delta Time)
                 Update(deltaTime);
+                
+                CurrentLevel.EventBus.Publish(new RenderFrame());
             }
             else
             {
@@ -107,13 +108,23 @@ public class GameEngine : IGameContext
         foreach (var entity in CurrentLevel.EntityManager.AllEntities)
         {
             if (entity == _player) continue;
-            if (Random.Shared.NextDouble() < 0.01)
+            if (Random.Shared.NextDouble() < 0.05)
             {
                 var(dRow, dCol) = (Random.Shared.Next(-1, 2), Random.Shared.Next(-1, 2)); 
                 var map = CurrentLevel.Map;
                 if (!map.GetTile(entity.Position.Row + dRow, entity.Position.Col + dCol).TryEnter()) continue;
-                CurrentLevel.EntityManager.MoveEntity(entity, entity.Position.Row + dRow, entity.Position.Col + dCol, map);
+                CurrentLevel.EntityManager.MoveEntity(entity, entity.Position.Row + dRow, entity.Position.Col + dCol);
             }
         }
     }
+}
+
+public record LevelChanged() : IEvent
+{
+    public string? LogMessage => null;
+}
+
+public record RenderFrame() : IEvent
+{
+    public string? LogMessage => null;
 }

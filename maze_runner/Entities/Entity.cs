@@ -3,29 +3,46 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace maze_runner.Entities;
 
-public abstract class Entity(int maxHealth)
+public abstract class Entity
 {
     public (int Row, int Col) Position { get; set; }
-    public int Health { get; set; } = maxHealth;
-    public virtual int MaxHealth { get; protected set; } = maxHealth;
+    public virtual string Name { get; protected set; }
+    public abstract char Symbol { get; }
+
+    public int MaxHealth { get; protected set; }
+    public int Health { get; private set; }
+    public bool IsAlive => Health > 0;
+
     public Attributes BaseStats { get; protected set; }
     public virtual Attributes CurrentStats => BaseStats;
+    
     public virtual int BaseDamage { get; protected set; }
+    public virtual int EffectiveDamage => BaseDamage; 
+    
     public virtual int BaseDefense { get; protected set; }
-    public bool IsAlive => Health > 0;
-    public abstract char Symbol { get; }
-    public virtual string Name { get; set; } = "Entity";
+    public virtual int EffectiveDefense => BaseDefense;
 
-    public int TakeDamage(int damage, int defense)
+    protected Entity(string name, int maxHealth)
     {
-        int realDamage = Math.Max(0, damage - defense);
-        Health -= realDamage;
-        if (Health < 0) Health = 0;
-        return realDamage;
+        Name = name;
+        MaxHealth = maxHealth;
+        Health = maxHealth;
     }
 
-    public virtual IGoblin? GetGoblin() => null;
-    public virtual ISkeleton? GetSkeleton() => null;
+    public int TakeDamage(int incomingDamage)
+    {
+        if (!IsAlive) return 0;
+
+        int realDamage = Math.Max(0, incomingDamage - EffectiveDefense);
+        Health -= realDamage;
+
+        if (Health > 0) return realDamage;
+        Health = 0;
+        Die();
+
+        return realDamage;
+    }
+    protected virtual void Die() { }
 }
 
 public record struct Attributes(int Strength, int Dexterity, int Resistance, int Stamina, int Luck, int Wisdom);
