@@ -6,6 +6,7 @@ public abstract class Weapon : Item, IWeapon, IEquippable, IStorable
 {
     public abstract int Damage { get; }
     public abstract int RequiredHands { get; set; }
+    public abstract int AcousticFootprint { get; }
     public abstract (int, int) ResolveCombat(int effectiveDamage, IAttackStrategy strategy, Attributes stats);
     public virtual void ApplyStatModifiers(ref Attributes stats) { }
 

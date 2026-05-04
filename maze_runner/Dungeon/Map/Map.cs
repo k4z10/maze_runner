@@ -1,3 +1,5 @@
+using System.Data;
+
 namespace maze_runner.Dungeon.Map;
 using Entities;
 using Entities.Player;
@@ -26,7 +28,53 @@ public class Map(int rows = 0, int cols = 0)
 
     public (int row, int col) GetSpawningPosition() => (0, 0);
     
-    
+    public Dictionary<(int Row, int Col), int> CalculateAcousticWave((int Row, int Col) origin, int range)
+    {
+        var wave = new Dictionary<(int Row, int Col), int>();
+        var queue = new Queue<((int Row, int Col) Pos, int Distance)>();
+
+        queue.Enqueue((origin, 0));
+        wave[origin] = 0;
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            if (current.Distance >= range) continue;
+
+            foreach (var neighbor in GetWalkableNeighbors(current.Pos))
+            {
+                if (!wave.ContainsKey(neighbor))
+                {
+                    int newDistance = current.Distance + 1;
+                    wave[neighbor] = newDistance;
+                    queue.Enqueue((neighbor, newDistance));
+                }
+            }
+        }
+
+        return wave;
+    }
+
+    private IEnumerable<(int Row, int Col)> GetWalkableNeighbors((int Row, int Col) origin)
+    {
+        List<(int dRow, int dCol)> vectors =
+        [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1)
+        ];
+        foreach (var vector in vectors)
+        {
+            var nextRow = origin.Row + vector.dRow;
+            var nextCol = origin.Col + vector.dCol;
+            var targetTile = GetTile(nextRow, nextCol);
+
+            if (targetTile.IsWalkable)
+                yield return (nextRow, nextCol);
+        }
+    }
 }
 
 public struct Room(int x, int y, int width, int height)
@@ -44,42 +92,3 @@ public struct Room(int x, int y, int width, int height)
                Y + Height + 1 >= other.Y;
     }
 }
-
-// public class EmptyMap(int rows, int cols) : Map(rows, cols)
-// {
-//     public override void GenerateMaze()
-//     {
-//         for (int i = 0; i < Rows; i++)
-//             for (int j = 0; j < Cols; j++)
-//                 Tiles[i, j] = new FloorTile();
-//     }
-// }
-//
-// public class FullMap(int rows, int cols) : Map(rows, cols)
-// {
-//     public override void GenerateMaze()
-//     { 
-//         for (int i = 0; i < Rows; i++)
-//             for (int j = 0; j < Cols; j++)
-//                 Tiles[i, j] = new FloorTile();
-//     }
-// }
-//
-// public class FromFileMap(int rows, int cols, string fileName) : Map(rows, cols)
-// {
-//     public override void GenerateMaze()
-//     {
-//         using StreamReader reader = new(fileName);
-//         for (int i = 0; i < Rows; i++)
-//         {
-//             var line = reader.ReadLine();
-//             for (int j = 0; j < Cols; j++)
-//             {
-//                 if (line == null || line.Length <= j || line[j] == '#' )
-//                     Tiles[i, j] = new WallTile();
-//                 else
-//                     Tiles[i, j] = new FloorTile();
-//             }
-//         }
-//     }
-// }

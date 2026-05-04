@@ -11,7 +11,7 @@ public class Move(ILevelContext ctx, int dx, int dy) : ICommand
         int targetX = ctx.EntityManager.Player.Position.Row + dx;
         int targetY = ctx.EntityManager.Player.Position.Col + dy;
 
-        if (ctx.Map.GetTile(targetX, targetY).TryEnter())
+        if (ctx.Map.GetTile(targetX, targetY).IsWalkable)
         {
             ctx.EntityManager.Player.Position = (targetX, targetY);
         }

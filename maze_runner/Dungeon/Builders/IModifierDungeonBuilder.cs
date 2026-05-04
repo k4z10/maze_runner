@@ -8,7 +8,7 @@ public interface IModifierDungeonBuilder
     IModifierDungeonBuilder AddRooms(int maxCount);
     IModifierDungeonBuilder AddStartingRoom();
     
-    IModifierDungeonBuilder AddCentralRoom(int width, int height, bool secure);
+    IModifierDungeonBuilder AddCentralRoom(int width, int height);
     IModifierDungeonBuilder ConnectRooms();
     
     IModifierDungeonBuilder PopulateItems(IItemPool pool, int count);

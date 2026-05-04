@@ -1,3 +1,5 @@
+using maze_runner.Core;
+
 namespace maze_runner.Entities.Mobs;
 
 public class Goblin : Mob
@@ -8,7 +10,7 @@ public class Goblin : Mob
     public override char Symbol => 'G';
     public override int EffectiveDefense => Math.Max(0, BaseDefense + _fearModifier);
 
-    public Goblin(GoblinTribe tribe) : base("Goblin", maxHealth: 20)
+    public Goblin(GoblinTribe tribe, IEventPublisher ep, IEventSubscriber es) : base("Goblin", maxHealth: 20, ep: ep, es: es)
     {
         BaseDefense = 5;
         BaseDamage = 1;

@@ -1,13 +1,9 @@
 using System.Collections.Concurrent;
 using maze_runner.Core.Frontend;
-using maze_runner.Core.Frontend.Raylib;
 using maze_runner.Core.Logger;
 using maze_runner.Dungeon;
-using maze_runner.Entities;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-using maze_runner.Dungeon.Themes.Cave;
+
 
 namespace maze_runner.Core.Engine;
 using Entities.Player;
@@ -112,7 +108,7 @@ public class GameEngine : IGameContext
             {
                 var(dRow, dCol) = (Random.Shared.Next(-1, 2), Random.Shared.Next(-1, 2)); 
                 var map = CurrentLevel.Map;
-                if (!map.GetTile(entity.Position.Row + dRow, entity.Position.Col + dCol).TryEnter()) continue;
+                if (!map.GetTile(entity.Position.Row + dRow, entity.Position.Col + dCol).IsWalkable) continue;
                 CurrentLevel.EntityManager.MoveEntity(entity, entity.Position.Row + dRow, entity.Position.Col + dCol);
             }
         }

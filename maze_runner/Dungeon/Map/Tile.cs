@@ -10,18 +10,18 @@ public abstract class Tile
     public void AddItem(Item item) => _items.Push(item);
     public Item? PopItem() => _items.Count > 0 ? _items.Pop() : null;
 
-    public abstract bool TryEnter();
+    public abstract bool IsWalkable { get; }
     public abstract char GetTileSymbol();
 }
 
 public class FloorTile : Tile
 {
-    public override bool TryEnter() => true;
+    public override bool IsWalkable => true;
     public override char GetTileSymbol() => _items.Count > 0 ? _items.Peek().TileSymbol : ' ';
 }
 
 public class WallTile : Tile
 {
-    public override bool TryEnter() => false;
+    public override bool IsWalkable => false;
     public override char GetTileSymbol() => '█';
 }

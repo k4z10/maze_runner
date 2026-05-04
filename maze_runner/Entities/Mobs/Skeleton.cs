@@ -1,3 +1,5 @@
+using maze_runner.Core;
+
 namespace maze_runner.Entities.Mobs;
 
 public class Skeleton : Mob
@@ -8,7 +10,7 @@ public class Skeleton : Mob
     public override char Symbol => 'S';
     public override int EffectiveDamage => Math.Max(0, BaseDamage + _rageModifer);
 
-    public Skeleton(SkeletonTribe tribe) : base("Skeleton", maxHealth: 10)
+    public Skeleton(SkeletonTribe tribe, IEventPublisher ep, IEventSubscriber es) : base("Skeleton", maxHealth: 10, ep: ep, es: es)
     {
         BaseDefense = 5;
         BaseDamage = 1;

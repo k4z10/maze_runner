@@ -1,11 +1,6 @@
-using maze_runner.Commands.Core;
 using maze_runner.Commands.Player;
 using maze_runner.Core;
-using maze_runner.Entities;
 using maze_runner.Entities.Combat;
-using maze_runner.Entities.Mobs;
-using maze_runner.Items.Modifiers;
-using Terminal.Gui;
 
 namespace maze_runner.Dungeon.Builders;
 using Items.Models; 
@@ -62,7 +57,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         return this;
     }
 
-    public IModifierDungeonBuilder AddCentralRoom(int width, int height, bool secure)
+    public IModifierDungeonBuilder AddCentralRoom(int width, int height)
     {
         int x = (_ctx.Map.Cols - width) / 2;
         int y = (_ctx.Map.Rows - height) / 2;
@@ -70,9 +65,6 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         var central = new Room(x, y, width, height);
         CraveRoom(central);
         _rooms.Add(central);
-
-        var boss = new MainBoss(100, ((_ctx.Map.Rows - 1) / 2, (_ctx.Map.Cols - 1) / 2));
-        if (secure) _ctx.EntityManager.AddEntity(boss);
 
         return this;
     }
@@ -131,7 +123,7 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         {
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
 
-            var enemy = pool.GetEntity();
+            var enemy = pool.GetEntity((IEventPublisher)_ctx.EventBus, (IEventSubscriber)_ctx.EventBus);
             enemy.Position = randomCords;
             _ctx.EntityManager.AddEntity(enemy);
         }

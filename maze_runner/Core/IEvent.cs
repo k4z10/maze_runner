@@ -1,3 +1,6 @@
+using maze_runner.Entities;
+using maze_runner.Entities.Player;
+
 namespace maze_runner.Core;
 
 public interface IEvent
@@ -38,4 +41,22 @@ public record UnknownInputEvent(char Key) : IEvent
 public record TriggerQuit() : IEvent
 {
     public string? LogMessage => null;
+}
+
+public record AcousticWavePropagate(
+    Dictionary<(int Row, int Col), int> Wave,
+    (int Row, int Col) Origin,
+    string SourceName
+    ) : IEvent
+{
+    public string? LogMessage => null;
+}
+
+public record SoundRegisteredEvent(
+    Entity Enemy,
+    (int Row, int Col) Origin,
+    int Distance
+    ) : IEvent
+{
+    public string? LogMessage => $"[{Enemy.Position.Row}, {Enemy.Position.Col}] {Enemy.Name} registered sound from [{Origin.Row}, {Origin.Col}] (Distance: {Distance})";
 }
