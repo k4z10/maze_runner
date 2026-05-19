@@ -1,5 +1,6 @@
 using maze_runner.Commands.TerminalUI;
 using maze_runner.Core.Engine;
+using maze_runner.Core.Logger;
 using maze_runner.Items.Models;
 
 namespace maze_runner.Core.Frontend;
@@ -590,7 +591,25 @@ public class TerminalFrontend : IGameFrontend
             AllowsMarking = false,
         };
         journalFrame.Add(journalListView);
-        journalListView.SetSource(_gameContext.Logger.Messages);
+        var latestLogFile = Directory.GetFiles(_gameContext.Config.LogDirectoryPath)
+            .Select(f => new FileInfo(f))
+            .OrderByDescending(fi => fi.LastWriteTime)
+            .FirstOrDefault()?.FullName;
+        if (latestLogFile != null)
+        {
+            var logsFile = new ObservableFile(latestLogFile);
+            journalListView.SetSource(logsFile.Lines);
+
+            logsFile.Lines.CollectionChanged += (s, args) =>
+            {
+                journalListView.SetNeedsDraw();
+                if (logsFile.Lines.Count > 0)
+                {
+                    journalListView.SelectedItem = logsFile.Lines.Count - 1;
+                    journalListView.TopItem = Math.Max(0, logsFile.Lines.Count - journalFrame.Frame.Height - 2);
+                }
+            };
+        }
         
         inventoryFrame.Add(handsFrame, itemsFrame, journalFrame, attributesFrame, accountFrame);
         

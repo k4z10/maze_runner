@@ -7,14 +7,12 @@ using System.Diagnostics;
 
 namespace maze_runner.Core.Engine;
 using Entities.Player;
-using Dungeon.Map;
 using Commands.Core;
 
 public class GameEngine : IGameContext
 {
     public GameConfig Config { get; }
     public ILevelContext CurrentLevel { get; private set; }
-    public MemoryLogger Logger { get; private set; }
 
     private readonly ConcurrentQueue<char> _inputQueue = new();
     private volatile bool _isRunning = true;
@@ -27,10 +25,9 @@ public class GameEngine : IGameContext
     private readonly Player _player;
     private readonly DungeonDirector _director = new();
 
-    public GameEngine(Player player, GameConfig config, MemoryLogger logger)
+    public GameEngine(Player player, GameConfig config)
     {
         Config = config;
-        Logger = logger;
         _player = player;
         CurrentLevel = new LevelContext();
         CurrentLevel.EntityManager.RegisterPlayer(player);
