@@ -1,5 +1,4 @@
-using maze_runner.Entities;
-using maze_runner.Entities.Player;
+using maze_runner.Model.Entities;
 
 namespace maze_runner.Core;
 

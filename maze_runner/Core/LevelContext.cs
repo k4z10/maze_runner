@@ -1,13 +1,12 @@
-using maze_runner.Entities;
+using maze_runner.Model.Dungeon.Map;
+using maze_runner.Model.Entities;
 
 namespace maze_runner.Core;
-using Commands.Core;
-using Dungeon.Map;
 
 public class LevelContext : ILevelContext
 {
     public Map Map { get; set; }
-    public InputHandler InputHandler { get; set; }
+    public CommandRegistry CommandRegistry { get; set; }
     public EntityManager EntityManager { get; set; }
     public EventBus EventBus { get; set; }
     public string Description { get; set; } = string.Empty;
@@ -16,7 +15,7 @@ public class LevelContext : ILevelContext
     public LevelContext()
     {
         Map = new Map();
-        InputHandler = new InputHandler();
+        CommandRegistry = new CommandRegistry();
         EventBus = new EventBus();
         EntityManager = new EntityManager(EventBus);
     }

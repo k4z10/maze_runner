@@ -1,15 +1,15 @@
 ﻿using System.Net;
+using maze_runner.Client;
 using maze_runner.Core;
 using maze_runner.Core.Logger;
-using maze_runner.Dungeon.Themes.Cave;
-using maze_runner.Entities.Player;
+using maze_runner.Model.Dungeon.Themes.Cave;
 
 namespace maze_runner;
-using Core.Engine;
+using maze_runner.Server;
 
 static class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         ParseProgramArgs(args,
             out var startClient,
@@ -18,23 +18,21 @@ static class Program
             out var clientPort,
             out var serverPort);
 
-        var config = ConfigLoader.Load("config.json");
-        UniversalLogChannel.ConnectLogger(new FileLogger(config));
 
         if (startServer)
         {
-            // Console.WriteLine("Starting Server...");
-        }
+            var config = ConfigLoader.Load("config.json");
+            UniversalLogChannel.ConnectLogger(new FileLogger(config));
+            
+            var server = new Server.ServerEngine(config, serverPort);
+            server.LoadLevel(new CaveTheme(), itemsCount: 15, enemiesCount: 10);
 
+            await server.StartServerAsync();
+        }
         if (startClient)
         {
-            // Console.WriteLine("Starting client...");
-            
-            var player = new Player(config.PlayerName);
-            
-            var engine = new GameEngine(player, config);
-            engine.LoadLevel(new CaveTheme(), 10, 10);
-            engine.Run();
+            var client = new ClientEngine();
+            await client.ConnectAndRunAsync(clientIp, clientPort);
         }
         
         if (!startClient && !startServer) Console.WriteLine("Run either as client or server");

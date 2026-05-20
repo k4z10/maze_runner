@@ -14,7 +14,22 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="logs\" />
+      <Folder Include="Network\Serialization\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="logs\**" />
+      <Compile Remove="resources\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="logs\**" />
+      <EmbeddedResource Remove="resources\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="logs\**" />
+      <None Remove="resources\**" />
     </ItemGroup>
 
 
