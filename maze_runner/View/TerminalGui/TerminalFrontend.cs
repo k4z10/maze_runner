@@ -25,7 +25,7 @@ public class TerminalFrontend : IGameFrontend
     private TextView _howToPlayTextView = new();
 
     private Terminal.Gui.View _journalView = new();
-    private TextView _journalTextView = new();
+    private ListView _journalListView = new();
     
     private const int TileInfoWidth     = 15;
     private const int TileInfoHeight    = 5;
@@ -37,6 +37,8 @@ public class TerminalFrontend : IGameFrontend
     private InputHandler _uiInput = new();
     private GameStateSnapshotDto? _state;
     private readonly int _myPlayerId;
+    private readonly ObservableCollection<string> _localJournal = new();
+    private readonly ObservableCollection<string> _localJournalFrame = new(); 
 
     public event Action<char>? OnKeyPressed;
     
@@ -90,6 +92,9 @@ public class TerminalFrontend : IGameFrontend
 
         Application.Invoke(() =>
         {
+            if (newState.NewLogs != null && newState.NewLogs.Count > 0)
+                UpdateJournal(newState.NewLogs);
+            
             var me = GetMe();
             // if (me != null && !me.IsAlive) ShowGameOverModal();
             
@@ -97,7 +102,7 @@ public class TerminalFrontend : IGameFrontend
         });
     }
     
-    private PlayerDto? GetMe() => _state?.Players.FirstOrDefault(p => p.Id == _myPlayerId);
+    private EntityDto? GetMe() => _state?.Entities.FirstOrDefault(p => p.Id == _myPlayerId);
 
     public void ToggleItemInfo() => _itemInfoToggle ^= 1;
     public void ToggleHelp() => _howToPlayOverlayToggle ^= 1;
@@ -152,20 +157,13 @@ public class TerminalFrontend : IGameFrontend
         
         foreach (var dropped in map.DroppedItems)
         {
-            if (dropped.Row >= 0 && dropped.Row < map.Height && dropped.Col >= 0 && dropped.Col < map.Width)
+            if (dropped.Row >= 0 && dropped.Row < map.Height && dropped.Col >= 0 && dropped.Col < map.Width && dropped.Item != null)
                 grid[dropped.Row, dropped.Col] = dropped.Item.Symbol;
         }
 
-        foreach (var entity in _state.Entities)
+        foreach (var entity in _state.Entities.Where(entity => entity.Row >= 0 && entity.Row < map.Height && entity.Col >= 0 && entity.Col < map.Width))
         {
-            if (entity.Row >= 0 && entity.Row < map.Height && entity.Col >= 0 && entity.Col < map.Width)
-                grid[entity.Row, entity.Col] = entity.Symbol;
-        }
-        
-        foreach (var player in _state.Players)
-        {
-            if (player.Row >= 0 && player.Row < map.Height && player.Col >= 0 && player.Col < map.Width)
-                grid[player.Row, player.Col] = player.Symbol;
+            grid[entity.Row, entity.Col] = entity.Symbol;
         }
 
         var sb = new StringBuilder();
@@ -186,6 +184,8 @@ public class TerminalFrontend : IGameFrontend
         var me = GetMe();
         if (me == null) return;
         
+        if (me.Inventory == null) goto stats;
+        
         _leftHandLabel.Text = me.Inventory.LeftHand == null
             ? " "
             : $"{me.Inventory.LeftHand.Name}({me.Inventory.LeftHand.Symbol})";
@@ -202,6 +202,8 @@ public class TerminalFrontend : IGameFrontend
         
         _accountLabel.Text = $"Gold:  {me.Inventory.Gold}\n" +
                              $"Coins: {me.Inventory.Coins}";
+        
+        stats:
         _attributesLabel.Text =     $"""
                                     {me.Name}
                                         Health:     {me.Health}/{me.MaxHealth}
@@ -213,7 +215,7 @@ public class TerminalFrontend : IGameFrontend
                                         Wisdom:     {me.Stats.Wisdom}
                                     
                                     """;
-        var entity = _state?.Entities.FirstOrDefault(e => e.Row == me.Row && e.Col == me.Col);
+        var entity = _state?.Entities.FirstOrDefault(e => e.Row == me.Row && e.Col == me.Col && e.Id != me.Id);
         if (entity != null)
             _attributesLabel.Text += $"""
                                       Enemy
@@ -233,8 +235,13 @@ public class TerminalFrontend : IGameFrontend
         if (itemsOnMyTile.Any() && _itemInfoToggle == 1)
         {
             _tileInfoTextView.Text = string.Empty;
-            foreach (var dto in itemsOnMyTile) 
-                _tileInfoTextView.Text += $"{dto.Item.Name}({dto.Item.Symbol})\n";
+            foreach (var dto in itemsOnMyTile)
+            {
+                var item = dto.Item;
+                if (item == null) continue;
+                _tileInfoTextView.Text += $"{item.Name}({item.Symbol})\n";
+                
+            } 
 
             var terminalX = me.Col - TileInfoWidth / 2;
             var terminalY = me.Row - TileInfoHeight;
@@ -280,18 +287,18 @@ public class TerminalFrontend : IGameFrontend
 
     private void HowToPlayWrite()
     {
-        if (_state == null) return;
+        var meta = _state?.LevelMeta;
+        if (meta == null) return;
         
         var sb = new StringBuilder();
-        
-        sb.AppendLine("Level name: " + _state.LevelMeta.Name); // TODO
-        sb.AppendLine(_state.LevelMeta.Description);
+        sb.AppendLine("Level name: " + meta.Name); // TODO
+        sb.AppendLine(meta.Description);
         sb.AppendLine();
         sb.AppendLine("1. UI control");
         sb.AppendLine(_uiInput.ToString());
         sb.AppendLine();
         sb.AppendLine("2. In-game actions");
-        foreach (var cmd in _state.LevelMeta.Commands)
+        foreach (var cmd in meta.Commands)
             sb.AppendLine($"{cmd.Key} - {cmd.Description}");
     
         _howToPlayTextView.Text = sb.ToString();
@@ -302,12 +309,30 @@ public class TerminalFrontend : IGameFrontend
     {
         if (_journalOverlayToggle == 1 && _state != null)
         {
-            _journalTextView.Text += _state.RecentLogs;
+            _journalListView.SetSource(_localJournal);
             _journalView.Visible = true;
+
+            if (_localJournal.Count <= 0) return;
+            
+            _journalListView.SelectedItem = _localJournal.Count - 1;
+            var topItem = _localJournal.Count - _journalView.Frame.Height + 2;
+            _journalListView.TopItem = topItem > 0 ? topItem : 0;
         }
         else
         {
             _journalView.Visible = false;
+        }
+    }
+
+    private void UpdateJournal(List<string> newMessages)
+    {
+        foreach (var msg in newMessages)
+        {
+            _localJournal.Add(msg);
+            
+            _localJournalFrame.Insert(0, msg);
+            if (_localJournalFrame.Count > 20)
+                _localJournalFrame.RemoveAt(20);
         }
     }
 
@@ -524,6 +549,7 @@ public class TerminalFrontend : IGameFrontend
         {
             X = 0,
             Y = Pos.Bottom(itemsFrame),
+
             Width = monyFrameWidth,
             Height = Dim.Fill(),
             Title = " Bundle ",
@@ -548,6 +574,7 @@ public class TerminalFrontend : IGameFrontend
             Height = Dim.Fill(),
             AllowsMarking = false,
         };
+        journalListView.SetSource(_localJournalFrame);
         journalFrame.Add(journalListView);
         
         inventoryFrame.Add(handsFrame, itemsFrame, journalFrame, attributesFrame, accountFrame);
@@ -581,16 +608,14 @@ public class TerminalFrontend : IGameFrontend
             BorderStyle = LineStyle.Single,
             Visible = false,
         };
-        _journalTextView = new TextView()
+        _journalListView = new ListView()
         {
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            WordWrap = true,
-            ReadOnly = true,
         };
-        _journalView.Add(_journalTextView);
+        _journalListView.SetSource(_localJournal);
+        _journalView.Add(_journalListView);
         
         _mainWindow.Add(mapFrame, inventoryFrame, _journalView, _howToPlayOverlay); // _howToPlayOverlay always at the end.
     }
-
 }

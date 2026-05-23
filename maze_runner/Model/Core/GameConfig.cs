@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace maze_runner.Core;
+namespace maze_runner.Model.Core.Events;
 
 public record GameConfig()
 {

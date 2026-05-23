@@ -1,12 +1,12 @@
 using System.Text;
-using maze_runner.Core;
+using maze_runner.Model.Core;
 using maze_runner.Model.Dungeon.Map;
+using maze_runner.Model.Entities;
 using maze_runner.Model.Entities.Player;
 using maze_runner.Model.Items.Models;
 using maze_runner.Network.DTOs.GameState;
 
-namespace maze_runner.ServerEngine;
-using Model.Entities;
+namespace maze_runner.Server;
 
 public static class SnapshotGenerator
 {
@@ -17,16 +17,12 @@ public static class SnapshotGenerator
         var snapshot = new GameStateSnapshotDto
         {
             Entities = [],
-            Players = [],
             Map = CreateMapDto(map),
             LevelMeta = CreateLevelMetaDto(ctx)
         };
 
-        foreach (var entity in entityManager.Mobs)
+        foreach (var entity in entityManager.Entities)
             snapshot.Entities.Add(CreateEntityDto(entity));
-        
-        foreach (var player in entityManager.Players)
-            snapshot.Players.Add(CreatePlayerDto(player));
         
         return snapshot;
     }
@@ -53,6 +49,14 @@ public static class SnapshotGenerator
                 Stamina = entity.CurrentStats.Stamina,
                 Luck = entity.CurrentStats.Luck,
                 Wisdom = entity.CurrentStats.Wisdom
+            },
+            Inventory = entity.Inventory == null ? null : new InventoryDto()
+            {
+                LeftHand = entity.Inventory.LeftHand != null ? CreateItemDto(entity.Inventory.LeftHand) : null,
+                RightHand = entity.Inventory.RightHand != null ? CreateItemDto(entity.Inventory.RightHand) : null,
+                Items = entity.Inventory.Items.Select(CreateItemDto).ToList(),
+                Coins =  entity.Inventory.Coins,
+                Gold = entity.Inventory.Gold,
             }
         };
     }
@@ -96,39 +100,6 @@ public static class SnapshotGenerator
     }
 
     private static bool HasAnyModifiers(Attributes mods) => mods.Strength != 0 || mods.Dexterity != 0 || mods.Resistance != 0 || mods.Stamina != 0 || mods.Luck != 0 || mods.Wisdom != 0;
-
-    private static PlayerDto CreatePlayerDto(Player player)
-    {
-        return new PlayerDto
-        {
-            Id = player.Id,
-            Name = "Player",
-            Symbol = player.Symbol, 
-            Row = player.Position.Row,
-            Col = player.Position.Col,
-            Health = player.Health,
-            MaxHealth = player.MaxHealth,
-        
-            Stats = new AttributesDto
-            {
-                Strength = player.CurrentStats.Strength,
-                Dexterity = player.CurrentStats.Dexterity,
-                Resistance = player.CurrentStats.Resistance,
-                Stamina = player.CurrentStats.Stamina,
-                Luck = player.CurrentStats.Luck,
-                Wisdom = player.CurrentStats.Wisdom
-            },
-
-            Inventory = new InventoryDto
-            {
-                LeftHand = player.Inventory.LeftHand != null ? CreateItemDto(player.Inventory.LeftHand) : null,
-                RightHand = player.Inventory.RightHand != null ? CreateItemDto(player.Inventory.RightHand) : null,
-                Items = player.Inventory.Items.Select(CreateItemDto).ToList(),
-                Coins =  player.Inventory.Coins,
-                Gold = player.Inventory.Gold,
-            }
-        };
-    }
 
     private static MapDto CreateMapDto(Map map)
     {

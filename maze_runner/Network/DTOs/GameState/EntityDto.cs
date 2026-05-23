@@ -19,11 +19,7 @@ public record EntityDto
     [JsonPropertyName("def")] public int Defense { get; init; }
 
     [JsonPropertyName("attr")] public AttributesDto Stats { get; init; } = null!;
-}
-
-public record PlayerDto : EntityDto
-{
-    [JsonPropertyName("inv")] public InventoryDto Inventory { get; init; } = null!;
+    [JsonPropertyName("inv")] public InventoryDto? Inventory { get; init; }
 }
 
 public record AttributesDto

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 public record LevelMetaDto
 {
-    [JsonPropertyName("name")] public string Name { get; init; }
+    [JsonPropertyName("name")] public string Name { get; init; } = string.Empty;
     [JsonPropertyName("description")] public string Description { get; init; } = string.Empty;
     [JsonPropertyName("cmd")] public List<CommandBindingDto> Commands { get; init; } = [];
 }

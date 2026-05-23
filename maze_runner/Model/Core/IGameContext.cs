@@ -1,4 +1,6 @@
-namespace maze_runner.Core;
+using maze_runner.Model.Core.Events;
+
+namespace maze_runner.Model.Core;
 
 public interface IGameContext
 {

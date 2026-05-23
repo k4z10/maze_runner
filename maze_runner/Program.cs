@@ -1,8 +1,9 @@
 ﻿using System.Net;
 using maze_runner.Client;
-using maze_runner.Core;
-using maze_runner.Core.Logger;
+using maze_runner.Model.Core;
+using maze_runner.Model.Core.Logger;
 using maze_runner.Model.Dungeon.Themes.Cave;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace maze_runner;
 using maze_runner.Server;
@@ -18,24 +19,23 @@ static class Program
             out var clientPort,
             out var serverPort);
 
-
+        Task serverTask = Task.CompletedTask, clientTask = Task.CompletedTask;
         if (startServer)
         {
             var config = ConfigLoader.Load("config.json");
-            UniversalLogChannel.ConnectLogger(new FileLogger(config));
             
-            var server = new Server.ServerEngine(config, serverPort);
+            var server = new ServerEngine(config, serverPort);
             server.LoadLevel(new CaveTheme(), itemsCount: 15, enemiesCount: 10);
-
-            await server.StartServerAsync();
+            serverTask = Task.Run(server.StartServerAsync);
         }
         if (startClient)
         {
             var client = new ClientEngine();
-            await client.ConnectAndRunAsync(clientIp, clientPort);
+            clientTask = Task.Run(() => client.ConnectAndRunAsync(clientIp, clientPort));
         }
         
         if (!startClient && !startServer) Console.WriteLine("Run either as client or server");
+        await Task.WhenAll(serverTask, clientTask);
     }
 
     private static bool TryParseEndpoint(string input, out string ip, out int port)
@@ -119,7 +119,8 @@ static class Program
 
                                         --help               Shows this help message and exits.
                                       """);
-                    return;
+                    Environment.Exit(0);
+                    break;
                 }
             }
         }

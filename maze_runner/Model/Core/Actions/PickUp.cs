@@ -1,19 +1,22 @@
-using maze_runner.Core;
-using maze_runner.Model.Core;
+using maze_runner.Model.Core.Events;
 
-namespace maze_runner.Commands.Player;
+namespace maze_runner.Model.Core.Actions;
 
 public class PickUp : ICommand
 {
     public void Execute(ILevelContext ctx, int playerId)
     {
-        var player = ctx.EntityManager.Players.FirstOrDefault(p => p.Id == playerId);
+        var player = ctx.EntityManager.Entities.FirstOrDefault(p => p.Id == playerId);
         if (player == null || !player.IsAlive) return;
         
         var (row, col) = player.Position;
         if (ctx.Map.GetTile(row, col).Items.Count <= 0) return;
+        
         var item = ctx.Map.GetTile(row, col).PopItem();
         if (item == null) return;
+        
+        var inventory = player.Inventory;
+        if (inventory == null) return;
 
         var storableFeature = item.GetStorableFeature();
         if (storableFeature == null) return;
@@ -21,11 +24,11 @@ public class PickUp : ICommand
         var currencyFeature = item.GetCurrencyFeature();
         if (currencyFeature != null)
         {
-            player.Inventory.Coins += currencyFeature.Amount;
+            inventory.Coins += currencyFeature.Amount;
         }
         else
         {
-            player.Inventory.Items.Add(item);
+            inventory.Items.Add(item);
         }
 
         var weaponFeature = item.GetWeaponFeature();
@@ -35,6 +38,6 @@ public class PickUp : ICommand
             ctx.EventBus.Publish(new AcousticWavePropagate(wave, (row, col), item.Name));
         }
         
-        ctx.EventBus.Publish(new ItemPickedUpEvent(item.Name));
+        ctx.EventBus.Publish(new ItemPickedUpEvent(player.Name, item.Name));
     }
 }

@@ -1,4 +1,4 @@
-using maze_runner.Core;
+using maze_runner.Model.Core.Events;
 
 namespace maze_runner.Model.Core.Actions;
 
@@ -6,7 +6,7 @@ public class Move(int dRow, int dCol) : ICommand
 {
     public void Execute(ILevelContext ctx, int playerId)
     {
-        var player = ctx.EntityManager.Players.FirstOrDefault(p => p.Id == playerId);
+        var player = ctx.EntityManager.Entities.FirstOrDefault(p => p.Id == playerId);
         if (player == null || !player.IsAlive) return;
         
         int targetX = player.Position.Row + dRow;
@@ -18,7 +18,7 @@ public class Move(int dRow, int dCol) : ICommand
         }
         else
         {
-            ctx.EventBus.Publish(new WallBumpedEvent());
+            ctx.EventBus.Publish(new WallBumpedEvent(player.Name));
         }
     }
 }

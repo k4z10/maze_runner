@@ -1,8 +1,9 @@
-using maze_runner.Core;
+using maze_runner.Model.Core;
+using maze_runner.Model.Core.Events;
 
 namespace maze_runner.Model.Entities.Mobs;
 
-public class Skeleton : Mob
+public class Skeleton : Entity
 {
     private readonly SkeletonTribe _myTribe;
     private int _rageModifer = 0;
@@ -10,7 +11,7 @@ public class Skeleton : Mob
     public override char Symbol => 'S';
     public override int EffectiveDamage => Math.Max(0, BaseDamage + _rageModifer);
 
-    public Skeleton(SkeletonTribe tribe, IEventPublisher ep, IEventSubscriber es) : base("Skeleton", maxHealth: 10, ep: ep, es: es)
+    public Skeleton(SkeletonTribe tribe, EventBus bus) : base("Skeleton", maxHealth: 10, bus: bus)
     {
         BaseDefense = 5;
         BaseDamage = 1;
@@ -19,14 +20,11 @@ public class Skeleton : Mob
         _myTribe.Register(this);
     }
 
-    protected override void Die()
+    public override void Dispose()
     {
-        base.Die();
+        base.Dispose();
         _myTribe.ReportDeath(this);
     }
 
-    public void Enrage()
-    {
-        _rageModifer += 1;
-    }
+    public void Enrage() => _rageModifer += 1;
 }

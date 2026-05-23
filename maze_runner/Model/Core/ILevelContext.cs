@@ -1,7 +1,9 @@
+using maze_runner.Model.Core.Actions;
+using maze_runner.Model.Core.Events;
 using maze_runner.Model.Dungeon.Map;
 using maze_runner.Model.Entities;
 
-namespace maze_runner.Core;
+namespace maze_runner.Model.Core;
 
 public interface ILevelContext
 {

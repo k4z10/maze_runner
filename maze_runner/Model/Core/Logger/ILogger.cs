@@ -1,4 +1,4 @@
-namespace maze_runner.Core.Logger;
+namespace maze_runner.Model.Core.Logger;
 
 public interface ILogger
 {

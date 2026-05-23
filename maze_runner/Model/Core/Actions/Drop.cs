@@ -1,18 +1,16 @@
-using maze_runner.Model.Core;
 using maze_runner.Model.Items.Models;
 
-namespace maze_runner.Commands.Player;
-using Core;
+namespace maze_runner.Model.Core.Actions;
 
 public class Drop : ICommand
 {
     public void Execute(ILevelContext ctx, int playerId)
     {
-        var player = ctx.EntityManager.Players.FirstOrDefault(p => p.Id == playerId);
+        var player = ctx.EntityManager.Entities.FirstOrDefault(p => p.Id == playerId);
         if (player == null || !player.IsAlive) return;
         
         var inventory = player.Inventory;
-        if (inventory.Items.Count <= 0 && inventory.Coins <= 0 && inventory.Gold <= 0) return;
+        if (inventory == null || inventory.Items.Count <= 0 && inventory.Coins <= 0 && inventory.Gold <= 0) return;
         var currentTile = ctx.Map.GetTile(player.Position.Row, player.Position.Col);
         
         switch (inventory.CurrentIndex)
@@ -35,7 +33,7 @@ public class Drop : ICommand
             }
             default:
             {
-                var item = inventory.Items[player.Inventory.CurrentIndex];
+                var item = inventory.Items[inventory.CurrentIndex];
                 inventory.Items.Remove(item);
                 currentTile.AddItem(item);
                 return;

@@ -1,6 +1,6 @@
-using maze_runner.Commands.Player;
-using maze_runner.Core;
+using maze_runner.Model.Core;
 using maze_runner.Model.Core.Actions;
+using maze_runner.Model.Core.Events;
 using maze_runner.Model.Dungeon.Map;
 using maze_runner.Model.Entities.Combat;
 using maze_runner.Model.Items.Models;
@@ -120,9 +120,9 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         {
             var randomCords = _spawnableCords[_random.Next(_spawnableCords.Count)];
 
-            var enemy = pool.GetEntity((IEventPublisher)_ctx.EventBus, (IEventSubscriber)_ctx.EventBus);
+            var enemy = pool.GetEntity(_ctx.EventBus);
             enemy.Position = randomCords;
-            _ctx.EntityManager.AddEntity(enemy);
+            _ctx.EntityManager.RegisterEntity(enemy);
         }
         
         _ctx.CommandRegistry.RegisterCommand('z', "ATTACK_N", new Attack(new NormalAttack()), "Perform -normal- attack");

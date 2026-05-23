@@ -1,6 +1,4 @@
-using maze_runner.Model.Core;
-
-namespace maze_runner.Core;
+namespace maze_runner.Model.Core.Actions;
 
 public class CommandRegistry
 {

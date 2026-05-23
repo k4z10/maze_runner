@@ -1,4 +1,6 @@
-namespace maze_runner.Core.Logger;
+using maze_runner.Model.Core.Events;
+
+namespace maze_runner.Model.Core.Logger;
 
 public class FileLogger : ILogger, IDisposable
 {

@@ -1,6 +1,7 @@
 using System.Text.Json;
+using maze_runner.Model.Core.Events;
 
-namespace maze_runner.Core;
+namespace maze_runner.Model.Core;
 
 public static class ConfigLoader
 {

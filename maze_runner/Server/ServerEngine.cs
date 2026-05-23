@@ -3,17 +3,19 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
-using maze_runner.Core;
+using maze_runner.Model.Core;
+using maze_runner.Model.Core.Events;
+using maze_runner.Model.Core.Logger;
 using maze_runner.Model.Dungeon;
+using maze_runner.Model.Entities;
 using maze_runner.Model.Entities.Player;
 using maze_runner.Network.DTOs.Actions;
-using maze_runner.ServerEngine;
 
 namespace maze_runner.Server;
 
-public class ServerEngine(GameConfig config, int port) : IGameContext
+public class ServerEngine : IGameContext
 {
-    public GameConfig Config { get; } = config;
+    public GameConfig Config { get; }
     public ILevelContext CurrentLevel { get; private set; } = new LevelContext();
     public bool IsRunning { get; private set; } = true;
     
@@ -22,15 +24,28 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
     private readonly Lock _gameLock = new();
 
     private readonly ConcurrentDictionary<int, StreamWriter> _clientWriters = new();
-    private int _nextPlayerId = 1;
+    private int _nextPlayerId;
 
     private readonly DungeonDirector _director = new();
+    private readonly GameConfig _config;
+    private readonly int _port;
+    private readonly FileLogger _fileLogger;
+    private readonly List<string> _logsThisTick = new();
+
+    public ServerEngine(GameConfig config, int port)
+    {
+        _config = config;
+        _port = port;
+        Config = config;
+        _fileLogger = new FileLogger(config);
+    }
 
     public void LoadLevel(IDungeonThemeFactory theme, int itemsCount, int enemiesCount, int width = 40, int height = 20)
     {
         lock (_gameLock)
         {
             CurrentLevel = _director.ConstructLevel(theme, itemsCount, enemiesCount, width, height);
+            CurrentLevel.EventBus.OnLogGenerated = m => { lock(_gameLock) { _fileLogger.Log(m); _logsThisTick.Add(m); } };
             
             foreach (var playerId in _clientWriters.Keys)
                 SpawnPlayer(playerId);
@@ -41,9 +56,9 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
     {
         _ = Task.Run(GameLoop);
 
-        var listener = new TcpListener(IPAddress.Any, port);
+        var listener = new TcpListener(IPAddress.Any, _port);
         listener.Start();
-        Console.WriteLine($"[Serwer] Nasłuchiwanie na porcie {port}...");
+        Console.WriteLine($"[Serwer] Nasłuchiwanie na porcie {_port}...");
 
         while (IsRunning)
         {
@@ -109,7 +124,7 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
             
             lock (_gameLock)
             {
-                CurrentLevel.EntityManager.RemovePlayer(player);
+                CurrentLevel.EntityManager.RemoveEntity(player);
             }
             tcpClient.Close();
         }
@@ -117,9 +132,8 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
 
     private Player SpawnPlayer(int playerId)
     {
-        // Zakładam modyfikację w EntityManager z poprzednich kroków
-        var newPlayer = new Player($"Gracz {playerId}") { Id = playerId };
-        CurrentLevel.EntityManager.RegisterPlayer(newPlayer);
+        var newPlayer = new Player($"{_config.PlayerName} {playerId}", CurrentLevel.EventBus) { Id = playerId };
+        CurrentLevel.EntityManager.RegisterEntity(newPlayer);
         newPlayer.Position = CurrentLevel.Map.GetSpawningPosition();
         return newPlayer;
     }
@@ -170,23 +184,11 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
 
     private void Update(double deltaTime)
     {
-        // Usuwanie martwych bytów z uwzględnieniem wielu graczy
         CurrentLevel.EntityManager.RemoveDeadEntities();
 
-        foreach (var mod in CurrentLevel.EntityManager.Mobs)
+        foreach (var entity in CurrentLevel.EntityManager.Entities)
         {
-            if (Random.Shared.NextDouble() < 0.05)
-            {
-                var (dRow, dCol) = (Random.Shared.Next(-1, 2), Random.Shared.Next(-1, 2)); 
-                var map = CurrentLevel.Map;
-                
-                int targetRow = mod.Position.Row + dRow;
-                int targetCol = mod.Position.Col + dCol;
-
-                if (!map.GetTile(targetRow, targetCol).IsWalkable) continue;
-                
-                CurrentLevel.EntityManager.MoveEntity(mod, targetRow, targetCol);
-            }
+            entity.UpdateState(CurrentLevel, deltaTime);
         }
     }
 
@@ -196,8 +198,10 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
 
         lock (_gameLock)
         {
-            var snapshot = SnapshotGenerator.GenerateSnapshot(CurrentLevel);
+            var snapshot = SnapshotGenerator.GenerateSnapshot(CurrentLevel) with { NewLogs = _logsThisTick.ToList() };
             jsonPayload = JsonSerializer.Serialize(snapshot) + "\n";
+            
+            _logsThisTick.Clear();
         }
 
         foreach (var writer in _clientWriters.Values)

@@ -1,4 +1,4 @@
-using maze_runner.Core;
+using maze_runner.Model.Core;
 using maze_runner.Model.Items.Models;
 
 namespace maze_runner.Model.Dungeon.Builders;
