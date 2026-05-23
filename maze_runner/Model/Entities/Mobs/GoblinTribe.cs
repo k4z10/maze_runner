@@ -4,7 +4,7 @@ public class GoblinTribe : Species<Goblin>
 {
     protected override void OnMemberDeath()
     {
-        foreach (var goblin in _aliveMembers)
+        foreach (var goblin in AliveMembers)
         {
             goblin.Frighten();
         }

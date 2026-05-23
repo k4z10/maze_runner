@@ -1,17 +1,17 @@
 namespace maze_runner.Model.Entities.Mobs;
 
-public abstract class Species<T> where T : Mob
+public abstract class Species<T> where T : Entity
 {
-    protected readonly List<T> _aliveMembers = new();
+    protected readonly List<T> AliveMembers = new();
     
     public void Register(T member)
     {
-        _aliveMembers.Add(member);
+        AliveMembers.Add(member);
     }
 
     public void ReportDeath(T deadMember)
     {
-        _aliveMembers.Remove(deadMember);
+        AliveMembers.Remove(deadMember);
         OnMemberDeath();
     }
 
