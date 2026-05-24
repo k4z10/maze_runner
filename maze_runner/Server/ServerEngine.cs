@@ -16,13 +16,14 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
     public GameConfig Config { get; } = config;
     public ILevelContext CurrentLevel { get; private set; } = new LevelContext();
     public bool IsRunning { get; private set; } = true;
+    public void StopServer() => IsRunning = false;
     
     private readonly ConcurrentQueue<ActionRequestDto> _actionQueue = new();
     
     private readonly Lock _gameLock = new();
 
     private readonly ConcurrentDictionary<int, StreamWriter> _clientWriters = new();
-    private readonly ConcurrentQueue<int> _availablePids = new(Enumerable.Range(0, 10));
+    private readonly ConcurrentQueue<int> _availablePids = new(Enumerable.Range(0, 2));
 
     private readonly DungeonDirector _director = new();
     private readonly GameConfig _config = config;
@@ -41,21 +42,32 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
         }
     }
 
-    public async Task StartServerAsync()
+    public async Task StartServerAsync(CancellationToken token = default)
     {
-        _ = Task.Run(GameLoop);
+        _ = Task.Run(GameLoop, token);
 
         var listener = new TcpListener(IPAddress.Any, port);
-        listener.Start();
-        _fileLogger.Log($"[Serwer] Nasłuchiwanie na porcie {port}...");
+        listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+        try
+        {
+            listener.Start();
+            _fileLogger.Log($"[Serwer] Nasłuchiwanie na porcie {port}...");
+        }
+        catch (Exception ex)
+        {
+            _fileLogger.Log($"[Serwer] FATAL Port niedostępny: {ex.Message}");
+            return;
+        }
 
         while (IsRunning)
         {
             try
             {
-                var client = await listener.AcceptTcpClientAsync();
-                _ = Task.Run(() => HandleClientAsync(client));
+                var client = await listener.AcceptTcpClientAsync(token);
+                _ = Task.Run(() => HandleClientAsync(client, token), token);
             }
+            catch (OperationCanceledException) {}
             catch (Exception ex)
             {
                 _fileLogger.Log($"[Serwer] Błąd akceptacji klienta: {ex.Message}");
@@ -65,7 +77,7 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
         listener.Stop();
     }
 
-    private async Task HandleClientAsync(TcpClient tcpClient)
+    private async Task HandleClientAsync(TcpClient tcpClient, CancellationToken token = default)
     {
         if (!_availablePids.TryDequeue(out var playerId))
         {
@@ -94,9 +106,9 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
 
         try
         {
-            while (IsRunning && tcpClient.Connected)
+            while (IsRunning && tcpClient.Connected && !token.IsCancellationRequested)
             {
-                string? json = await reader.ReadLineAsync();
+                string? json = await reader.ReadLineAsync(token);
                 if (string.IsNullOrEmpty(json)) break;
 
                 var request = JsonSerializer.Deserialize<ActionRequestDto>(json);
@@ -107,10 +119,7 @@ public class ServerEngine(GameConfig config, int port) : IGameContext
                 }
             }
         }
-        catch (Exception)
-        {
-            // ignored
-        }
+        catch (OperationCanceledException) {}
         finally
         {
             _fileLogger.Log($"[Serwer] Gracz {playerId} rozłączony.");
