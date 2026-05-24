@@ -183,49 +183,59 @@ public class TerminalFrontend : IGameFrontend
     {
         var me = GetMe();
         if (me == null) return;
-        
-        if (me.Inventory == null) goto stats;
-        
-        _leftHandLabel.Text = me.Inventory.LeftHand == null
-            ? " "
-            : $"{me.Inventory.LeftHand.Name}({me.Inventory.LeftHand.Symbol})";
-        _rightHandLabel.Text = me.Inventory.RightHand == null 
-            ? " " 
-            : $"{me.Inventory.RightHand.Name}({me.Inventory.RightHand.Symbol})";
 
-        var itemList = me.Inventory.Items.Select(i => $"{i.Name}({i.Symbol})");
-        _itemsListView.SetSource(new ObservableCollection<string>(itemList));
-        
-        var sb = new StringBuilder();
-        foreach (var item in me.Inventory.Items)
-            sb.AppendLine($"{item.Name}({item.Symbol})");
-        
-        _accountLabel.Text = $"Gold:  {me.Inventory.Gold}\n" +
-                             $"Coins: {me.Inventory.Coins}";
-        
-        stats:
-        _attributesLabel.Text =     $"""
-                                    {me.Name}
-                                        Health:     {me.Health}/{me.MaxHealth}
-                                        Dexterity:  {me.Stats.Dexterity}
-                                        Stamina:    {me.Stats.Stamina}
-                                        Strength:   {me.Stats.Strength}
-                                        Resistance: {me.Stats.Resistance}
-                                        Luck:       {me.Stats.Luck}
-                                        Wisdom:     {me.Stats.Wisdom}
-                                    
-                                    """;
+        if (me.Inventory != null)
+        {
+            _leftHandLabel.Text = me.Inventory.LeftHand == null ? " " : $"{me.Inventory.LeftHand.Name}({me.Inventory.LeftHand.Symbol})";
+            _rightHandLabel.Text = me.Inventory.RightHand == null ? " " : $"{me.Inventory.RightHand.Name}({me.Inventory.RightHand.Symbol})";
+
+            _accountLabel.Text = $"Gold:  {me.Inventory.Gold}\nCoins: {me.Inventory.Coins}";
+
+            var itemList = me.Inventory.Items.Select(i => $"{i.Name}({i.Symbol})").ToList();
+
+            var previousSelection = _itemsListView.SelectedItem;
+            var previousTopItem = _itemsListView.TopItem;
+
+            _itemsListView.SetSource(new ObservableCollection<string>(itemList));
+
+            if (itemList.Count > 0)
+            {
+                _itemsListView.SelectedItem = Math.Max(0, Math.Min(previousSelection, itemList.Count - 1));
+                _itemsListView.TopItem = Math.Max(0, Math.Min(previousTopItem, itemList.Count - 1));
+            }
+        }
+        else
+        {
+            _leftHandLabel.Text = " ";
+            _rightHandLabel.Text = " ";
+            _accountLabel.Text = "Gold:  0\nCoins: 0";
+            _itemsListView.SetSource(new ObservableCollection<string>());
+        }
+
+        _attributesLabel.Text = $"""
+                                Me: {me.Name}
+                                    Health:     {me.Health}/{me.MaxHealth}
+                                    Dexterity:  {me.Stats.Dexterity}
+                                    Stamina:    {me.Stats.Stamina}
+                                    Strength:   {me.Stats.Strength}
+                                    Resistance: {me.Stats.Resistance}
+                                    Luck:       {me.Stats.Luck}
+                                    Wisdom:     {me.Stats.Wisdom}
+                                
+                                """;
+
         var entity = _state?.Entities.FirstOrDefault(e => e.Row == me.Row && e.Col == me.Col && e.Id != me.Id);
         if (entity != null)
+        {
             _attributesLabel.Text += $"""
                                       Enemy
                                           Health:    {entity.Health}/{entity.MaxHealth}
                                           Damage:    {entity.Damage}
                                           Defense:   {entity.Defense} 
                                       """;
-
+        }
     }
-    
+        
     private void TileInfoOverlay()
     {
         var me = GetMe();
@@ -408,7 +418,7 @@ public class TerminalFrontend : IGameFrontend
             Quit();
         }
     }
-
+    /*
     void BuildUI()
     {
         var mapFrame = new Terminal.Gui.View()
@@ -518,7 +528,7 @@ public class TerminalFrontend : IGameFrontend
         _itemsListView.SelectedItemChanged += (_, args) =>
         {
             var me = GetMe();
-            if (me == null || args.Item >= me.Inventory.Items.Count) return;
+            if (me == null || me.Inventory == null || args.Item >= me.Inventory.Items.Count) return;
             ItemInfoWrite(me.Inventory.Items[args.Item]);
         };
         _itemsListView.RowRender += (_, args) =>
@@ -617,5 +627,183 @@ public class TerminalFrontend : IGameFrontend
         _journalView.Add(_journalListView);
         
         _mainWindow.Add(mapFrame, inventoryFrame, _journalView, _howToPlayOverlay); // _howToPlayOverlay always at the end.
+    }
+    */
+    
+    void BuildUI()
+    {
+        // ==========================================
+        // 1. Zewnętrzny kontener (Split ekranu na Mapę i Ekwipunek)
+        // ==========================================
+        
+        // MAPA (Lewa strona ekranu)
+        var mapFrame = new Terminal.Gui.View()
+        {
+            X = 0,
+            Y = 0,
+            Width = 42,
+            Height = Dim.Fill(),
+            Title = " Map ",
+            BorderStyle = LineStyle.Single
+        };
+
+        _mapLabel = new Label() { Width = Dim.Fill(), Height = Dim.Fill() };
+        
+        _tileInfoOverlay = new Terminal.Gui.View()
+        {
+            X = 0, Y = 0, 
+            Width = TileInfoWidth, Height = TileInfoHeight,
+            BorderStyle = LineStyle.Double,
+            Visible = false
+        };
+        _tileInfoTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), WordWrap = true, ReadOnly = true };
+        _tileInfoOverlay.Add(_tileInfoTextView);
+        mapFrame.Add(_mapLabel, _tileInfoOverlay);
+
+        // EKWIPUNEK (Prawa strona ekranu, wypełnia resztę)
+        var inventoryFrame = new Terminal.Gui.View()
+        {
+            X = Pos.Right(mapFrame), 
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            BorderStyle = LineStyle.Single
+        };
+
+        // ==========================================
+        // 2. Siatka Ekwipunku (Wewnątrz prawej ramki)
+        // ==========================================
+
+        var handsFrame = new Terminal.Gui.View()
+        {
+            X = 0, Y = 0,
+            Width = Dim.Fill(), Height = 5,
+            Title = " Hands ",
+            BorderStyle = LineStyle.Rounded,
+        };
+
+        var leftHandFrame = new Terminal.Gui.View() { X = 0, Y = 0, Width = Dim.Percent(50), Height = Dim.Fill(), BorderStyle = LineStyle.Single };
+        var rightHandFrame = new Terminal.Gui.View() { X = Pos.Right(leftHandFrame), Y = 0, Width = Dim.Percent(50), Height = Dim.Fill(), BorderStyle = LineStyle.Single };
+
+        _leftHandLabel = new Label() { Width = Dim.Fill(), Height = Dim.Fill() };
+        _rightHandLabel = new Label() { Width = Dim.Fill(), Height = Dim.Fill() };
+
+        leftHandFrame.Add(_leftHandLabel);
+        rightHandFrame.Add(_rightHandLabel);
+        handsFrame.Add(leftHandFrame, rightHandFrame);
+
+        // ----------------------------------------------------
+        // LEWA KOLUMNA (70% szerokości): Itemy, Złoto, Dziennik
+        // ----------------------------------------------------
+
+        var itemsFrame = new Terminal.Gui.View()
+        {
+            X = 0, 
+            Y = Pos.Bottom(handsFrame),
+            Width = Dim.Percent(70), 
+            Height = Dim.Percent(50),
+            Title = " Inventory ",
+            BorderStyle = LineStyle.Rounded
+        };
+
+        var accountFrame = new Terminal.Gui.View()
+        {
+            X = 0, 
+            Y = Pos.Bottom(itemsFrame),
+            Width = Dim.Percent(70),
+            Height = 4,
+            Title = " Bundle ",
+            BorderStyle = LineStyle.Rounded
+        };
+
+        var journalFrame = new Terminal.Gui.View()
+        {
+            X = 0, 
+            Y = Pos.Bottom(accountFrame),
+            Width = Dim.Percent(70), 
+            Height = Dim.Fill(),
+            Title = " Log ",
+            BorderStyle = LineStyle.Rounded
+        };
+
+        // ----------------------------------------------------
+        // PRAWA KOLUMNA (30% szerokości): Atrybuty (Do samego dołu)
+        // ----------------------------------------------------
+
+        var attributesFrame = new Terminal.Gui.View()
+        {
+            X = Pos.Right(itemsFrame),
+            Y = Pos.Bottom(handsFrame),
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            Title = " Attributes ",
+            BorderStyle = LineStyle.Rounded
+        };
+
+        _itemsListView = new ListView() { Width = Dim.Fill(), Height = Dim.Fill(), AllowsMarking = false };
+        _itemTooltipOverlay = new Terminal.Gui.View()
+        {
+            X = Pos.Percent(50), Y = 0, 
+            Width = Dim.Fill(), Height = Dim.Fill(),
+            BorderStyle = LineStyle.Double, 
+            Visible = false,
+        };
+        _tooltipTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), WordWrap = true, ReadOnly = true };
+        _itemTooltipOverlay.Add(_tooltipTextView);
+
+        _itemsListView.SelectedItemChanged += (_, args) =>
+        {
+            var me = GetMe();
+            if (me == null || me.Inventory == null || args.Item >= me.Inventory.Items.Count) return;
+            ItemInfoWrite(me.Inventory.Items[args.Item]);
+        };
+        _itemsListView.RowRender += (_, args) =>
+        {
+            args.RowAttribute = args.Row == _itemsListView.SelectedItem ?
+                                new Attribute(Color.Black, Color.White) :
+                                new Attribute(Color.White, Color.Black);
+        };
+
+        itemsFrame.Add(_itemsListView, _itemTooltipOverlay);
+
+        _attributesLabel = new Label() { Width = Dim.Fill(), Height = Dim.Fill() };
+        attributesFrame.Add(_attributesLabel);
+
+        _accountLabel = new Label() { Width = Dim.Fill(), Height = Dim.Fill() }; 
+        accountFrame.Add(_accountLabel);
+
+        var journalMiniListView = new ListView() { Width = Dim.Fill(), Height = Dim.Fill(), AllowsMarking = false };
+        journalMiniListView.SetSource(_localJournalFrame);
+        journalFrame.Add(journalMiniListView);
+
+        inventoryFrame.Add(handsFrame, itemsFrame, accountFrame, journalFrame, attributesFrame);
+
+        // ==========================================
+        // 3. Ekrany Modalne (Overlays na cały ekran)
+        // ==========================================
+        
+        _howToPlayOverlay = new Terminal.Gui.View()
+        {
+            X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(),
+            Title = " How to play? Miniguide.",
+            BorderStyle = LineStyle.Single,
+            Visible = false,
+        };
+        _howToPlayTextView = new TextView() { Width = Dim.Fill(), Height = Dim.Fill(), ReadOnly = true };
+        _howToPlayOverlay.Add(_howToPlayTextView);
+
+        _journalView = new Terminal.Gui.View()
+        {
+            X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(),
+            Title = " Journal Full View ",
+            BorderStyle = LineStyle.Single,
+            Visible = false,
+        };
+        _journalListView = new ListView() { Width = Dim.Fill(), Height = Dim.Fill() };
+        _journalListView.SetSource(_localJournal);
+        _journalView.Add(_journalListView);
+
+        // Dodanie wszystkiego do głównego okna
+        _mainWindow.Add(mapFrame, inventoryFrame, _journalView, _howToPlayOverlay);
     }
 }

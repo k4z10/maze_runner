@@ -25,7 +25,7 @@ public static class ConfigLoader
             string jsonString = File.ReadAllText(configPath);
             return JsonSerializer.Deserialize<GameConfig>(jsonString, JsonOptions) ?? new GameConfig();
         }
-        catch (JsonException e)
+        catch (JsonException)
         {
             return new GameConfig();
         }

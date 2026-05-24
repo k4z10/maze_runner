@@ -1,12 +1,10 @@
 ﻿using System.Net;
 using maze_runner.Client;
 using maze_runner.Model.Core;
-using maze_runner.Model.Core.Logger;
 using maze_runner.Model.Dungeon.Themes.Cave;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace maze_runner;
-using maze_runner.Server;
+using Server;
 
 static class Program
 {
@@ -19,6 +17,8 @@ static class Program
             out var clientPort,
             out var serverPort);
 
+        if (!startClient && !startServer) Console.WriteLine("Run either as client or server");
+        
         Task serverTask = Task.CompletedTask, clientTask = Task.CompletedTask;
         if (startServer)
         {
@@ -34,11 +34,11 @@ static class Program
             clientTask = Task.Run(() => client.ConnectAndRunAsync(clientIp, clientPort));
         }
         
-        if (!startClient && !startServer) Console.WriteLine("Run either as client or server");
-        await Task.WhenAll(serverTask, clientTask);
+        await Task.WhenAny(serverTask, clientTask);
+        Environment.Exit(0);
     }
 
-    private static bool TryParseEndpoint(string input, out string ip, out int port)
+    private static bool TryParseEndpoint(string input, out string? ip, out int port)
     {
         ip = null;
         port = 0;
@@ -46,7 +46,7 @@ static class Program
         var parts = input.Split(':');
         if (parts.Length != 2) return false;
         
-        if (IPAddress.TryParse(parts[0], out var parsedIp) && int.TryParse(parts[1], out var parsedPort) && parsedPort > 0 && parsedPort <= 1 << 16)
+        if (IPAddress.TryParse(parts[0], out var parsedIp) && int.TryParse(parts[1], out var parsedPort) && parsedPort > 0 && parsedPort <= 1 << 16 - 1)
         {
             ip = parsedIp.ToString();
             port = parsedPort;
@@ -83,7 +83,7 @@ static class Program
                     i++;
 
                     if (!TryParseEndpoint(val, out var ip, out var port)) continue;
-                    clientIp = ip;
+                    clientIp = ip!;
                     clientPort = port;
                     break;
                 }
@@ -94,7 +94,7 @@ static class Program
                     var val = args[i + 1];
                     i++;
 
-                    if (int.TryParse(val, out var port) && port > 0 && port <= 1 << 16) continue;
+                    if (!int.TryParse(val, out var port) || port <= 0 || port >= 1 << 16) continue;
                     serverPort = port;
                     break;
                 }

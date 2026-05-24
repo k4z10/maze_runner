@@ -2,7 +2,6 @@ using System.Text;
 using maze_runner.Model.Core;
 using maze_runner.Model.Dungeon.Map;
 using maze_runner.Model.Entities;
-using maze_runner.Model.Entities.Player;
 using maze_runner.Model.Items.Models;
 using maze_runner.Network.DTOs.GameState;
 

@@ -16,31 +16,36 @@ public class ClientEngine
 
     private IGameFrontend _frontend = null!;
     private GameStateSnapshotDto? _latestSnapshot;
-    private LevelMetaDto? _currentLevelMeta;
     private int _myPlayerId;
 
     public async Task ConnectAndRunAsync(string ip, int port)
     {
-        _tcpClient = new TcpClient();
-        await _tcpClient.ConnectAsync(ip, port);
+        try
+        {
+            _tcpClient = new TcpClient();
+            await _tcpClient.ConnectAsync(ip, port);
+
+            var stream = _tcpClient.GetStream();
+            _reader = new StreamReader(stream);
+            _writer = new StreamWriter(stream) { AutoFlush = true };
+
+            var handshake = await _reader.ReadLineAsync();
+            if (string.IsNullOrEmpty(handshake) || !int.TryParse(handshake, out _myPlayerId))
+                throw new AuthenticationException("Server did not respond");
+
+            _frontend = new TerminalFrontend(_myPlayerId);
+            _frontend.OnKeyPressed += HandleInput;
+
+            _ = Task.Run(ReceiveLoopAsync);
+
+            _frontend.Run();
+        }
+        finally
+        {
+            _tcpClient.Close();
+            _tcpClient.Dispose();
+        }
         
-        var stream = _tcpClient.GetStream();
-        _reader = new StreamReader(stream);
-        _writer = new StreamWriter(stream) { AutoFlush = true };
-
-        // HANDSHAKE: Odbieramy swoje przydzielone ID z serwera jako pierwszą wiadomość
-        string? handshake = await _reader.ReadLineAsync();
-        if (string.IsNullOrEmpty(handshake) || !int.TryParse(handshake, out _myPlayerId)) throw new AuthenticationException("Server did not respond");
-
-        // Inicjalizacja pasywnego widoku
-        _frontend = new TerminalFrontend(_myPlayerId);
-        _frontend.OnKeyPressed += HandleInput;
-
-        // Uruchamiamy pętlę czytającą w tle, aby nie zablokować UI
-        _ = Task.Run(ReceiveLoopAsync);
-
-        // Uruchamiamy interfejs (to wywołanie blokuje główny wątek klienta aż do wyjścia z gry)
-        _frontend.Run();
     }
 
     private async Task ReceiveLoopAsync()
@@ -60,15 +65,17 @@ public class ClientEngine
                 }
             }
         }
+        catch (ObjectDisposedException) {}
+        catch (IOException) {}
+        catch (SocketException) {}
         catch (Exception ex)
         {
-            // W środowisku Terminal.Gui wyprintowanie tutaj zepsuje render, 
-            // najlepiej zalogować do pliku lub pokazać MessageDialog.
+            if (!_tcpClient.Connected) return;
             Terminal.Gui.Application.Invoke(() => Terminal.Gui.MessageBox.ErrorQuery("Błąd Sieci", ex.Message, "OK"));
         }
         finally
         {
-            Terminal.Gui.Application.RequestStop(); // Zamknij UI w przypadku utraty połączenia
+            Terminal.Gui.Application.RequestStop();
         }
     }
 
@@ -79,7 +86,7 @@ public class ClientEngine
         string? commandId = null;
         var args = new Dictionary<string, string>();
 
-        var dynamicBinding = _latestSnapshot?.LevelMeta.Commands.FirstOrDefault(c => c.Key == key);
+        var dynamicBinding = _latestSnapshot?.LevelMeta?.Commands.FirstOrDefault(c => c.Key == key);
         if (dynamicBinding != null)
         {
             commandId = dynamicBinding.CommandId;
@@ -93,7 +100,6 @@ public class ClientEngine
                 CommandId = commandId,
             };
 
-            // Serializacja i wysyłka
             string jsonPayload = JsonSerializer.Serialize(request);
             _writer.WriteLine(jsonPayload);
         }

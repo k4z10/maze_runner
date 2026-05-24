@@ -1,4 +1,4 @@
-namespace maze_runner.Model.Entities.Mobs;
+namespace maze_runner.Model.Entities.Hostile;
 
 public abstract class Species<T> where T : Entity
 {

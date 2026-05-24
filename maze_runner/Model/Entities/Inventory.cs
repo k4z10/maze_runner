@@ -1,12 +1,11 @@
 using System.Collections.ObjectModel;
 using maze_runner.Model.Items.Models;
 
-namespace maze_runner.Model.Entities.Player.Components;
+namespace maze_runner.Model.Entities;
 
 public class Inventory
 {
-    public ObservableCollection<Item> Items = new();
-    public int CurrentIndex = 0;
+    public List<Item> Items { get; } = new();
 
     public int Gold { get; set; }
     public int Coins { get; set; }
@@ -40,7 +39,7 @@ public class Inventory
 
             LeftHand = item;
             RightHand = item;
-            RemoveItemSafe(item);
+            Items.Remove(item);
             return true;
         }
         
@@ -56,7 +55,7 @@ public class Inventory
                 TryUnequip(tmp);
                 RightHand = item;
             }
-            RemoveItemSafe(item);
+            Items.Remove(item);
             return true;
         }
         
@@ -64,12 +63,12 @@ public class Inventory
         if (RightHand == null)
         {
             RightHand = item;
-            RemoveItemSafe(item);
+            Items.Remove(item);
             return true;     
         }
         if (LeftHand != null) return false;
         LeftHand = item;
-        RemoveItemSafe(item);
+        Items.Remove(item);
         return true;
     }
 
@@ -95,18 +94,5 @@ public class Inventory
         
         Items.Add(item);
         return true;
-    }
-
-    private void RemoveItemSafe(Item item)
-    {
-        int index = Items.IndexOf(item);
-        if (index != -1)
-        {
-            Items.RemoveAt(index);
-            if (CurrentIndex >= Items.Count && CurrentIndex > 0)
-            {
-                CurrentIndex--;
-            }
-        }
     }
 }

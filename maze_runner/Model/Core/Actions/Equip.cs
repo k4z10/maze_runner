@@ -11,8 +11,9 @@ public class Equip : ICommand
         
         var inventory = player.Inventory;
         if (inventory == null || inventory.Items.Count <= 0 && inventory.Coins <= 0 && inventory.Gold <= 0) return;
-        var index = inventory.CurrentIndex;
-        var item = inventory.Items[index];
+        
+        var item = inventory.Items.FirstOrDefault();
+        if (item == null) return;
 
         if (inventory.TryEquip(item))
         {

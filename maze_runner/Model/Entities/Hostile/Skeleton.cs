@@ -1,14 +1,13 @@
-using maze_runner.Model.Core;
 using maze_runner.Model.Core.Events;
 
-namespace maze_runner.Model.Entities.Mobs;
+namespace maze_runner.Model.Entities.Hostile;
 
 public class Skeleton : Entity
 {
     private readonly SkeletonTribe _myTribe;
     private int _rageModifer = 0;
 
-    public override char Symbol => 'S';
+    public override char Symbol { get; set; } = 'S';
     public override int EffectiveDamage => Math.Max(0, BaseDamage + _rageModifer);
 
     public Skeleton(SkeletonTribe tribe, EventBus bus) : base("Skeleton", maxHealth: 10, bus: bus)

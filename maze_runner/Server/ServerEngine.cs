@@ -4,18 +4,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using maze_runner.Model.Core;
-using maze_runner.Model.Core.Events;
 using maze_runner.Model.Core.Logger;
 using maze_runner.Model.Dungeon;
 using maze_runner.Model.Entities;
-using maze_runner.Model.Entities.Player;
 using maze_runner.Network.DTOs.Actions;
 
 namespace maze_runner.Server;
 
-public class ServerEngine : IGameContext
+public class ServerEngine(GameConfig config, int port) : IGameContext
 {
-    public GameConfig Config { get; }
+    public GameConfig Config { get; } = config;
     public ILevelContext CurrentLevel { get; private set; } = new LevelContext();
     public bool IsRunning { get; private set; } = true;
     
@@ -24,21 +22,12 @@ public class ServerEngine : IGameContext
     private readonly Lock _gameLock = new();
 
     private readonly ConcurrentDictionary<int, StreamWriter> _clientWriters = new();
-    private int _nextPlayerId;
+    private readonly ConcurrentQueue<int> _availablePids = new(Enumerable.Range(0, 10));
 
     private readonly DungeonDirector _director = new();
-    private readonly GameConfig _config;
-    private readonly int _port;
-    private readonly FileLogger _fileLogger;
+    private readonly GameConfig _config = config;
+    private readonly FileLogger _fileLogger = new(config);
     private readonly List<string> _logsThisTick = new();
-
-    public ServerEngine(GameConfig config, int port)
-    {
-        _config = config;
-        _port = port;
-        Config = config;
-        _fileLogger = new FileLogger(config);
-    }
 
     public void LoadLevel(IDungeonThemeFactory theme, int itemsCount, int enemiesCount, int width = 40, int height = 20)
     {
@@ -56,9 +45,9 @@ public class ServerEngine : IGameContext
     {
         _ = Task.Run(GameLoop);
 
-        var listener = new TcpListener(IPAddress.Any, _port);
+        var listener = new TcpListener(IPAddress.Any, port);
         listener.Start();
-        Console.WriteLine($"[Serwer] Nasłuchiwanie na porcie {_port}...");
+        _fileLogger.Log($"[Serwer] Nasłuchiwanie na porcie {port}...");
 
         while (IsRunning)
         {
@@ -69,7 +58,7 @@ public class ServerEngine : IGameContext
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Serwer] Błąd akceptacji klienta: {ex.Message}");
+                _fileLogger.Log($"[Serwer] Błąd akceptacji klienta: {ex.Message}");
             }
         }
         
@@ -78,8 +67,14 @@ public class ServerEngine : IGameContext
 
     private async Task HandleClientAsync(TcpClient tcpClient)
     {
-        int playerId = Interlocked.Increment(ref _nextPlayerId);
-        Console.WriteLine($"[Serwer] Gracz {playerId} połączony.");
+        if (!_availablePids.TryDequeue(out var playerId))
+        {
+            _fileLogger.Log("[Serwer] Odrzucono połączenie - osiągnięto limit 10 graczy.");
+            tcpClient.Close();
+            return;
+        }
+        
+        _fileLogger.Log($"[Serwer] Gracz {playerId} połączony.");
 
         var stream = tcpClient.GetStream();
         var writer = new StreamWriter(stream) { AutoFlush = true };
@@ -87,7 +82,7 @@ public class ServerEngine : IGameContext
 
         _clientWriters.TryAdd(playerId, writer);
 
-        await writer.WriteLineAsync(playerId.ToString());
+        await writer.WriteLineAsync(playerId.ToString()); // handshake
 
         Player player;
         lock (_gameLock)
@@ -102,12 +97,11 @@ public class ServerEngine : IGameContext
             while (IsRunning && tcpClient.Connected)
             {
                 string? json = await reader.ReadLineAsync();
-                if (string.IsNullOrEmpty(json)) break; // Klient się rozłączył
+                if (string.IsNullOrEmpty(json)) break;
 
                 var request = JsonSerializer.Deserialize<ActionRequestDto>(json);
                 if (request != null)
                 {
-                    // Wymuszenie identyfikatora sesji, aby klient nie mógł wysłać akcji w imieniu innego gracza
                     var securedRequest = request with { PlayerId = playerId };
                     _actionQueue.Enqueue(securedRequest);
                 }
@@ -115,24 +109,26 @@ public class ServerEngine : IGameContext
         }
         catch (Exception)
         {
-            // Ignorujemy błędy zerwanego potoku
+            // ignored
         }
         finally
         {
-            Console.WriteLine($"[Serwer] Gracz {playerId} rozłączony.");
+            _fileLogger.Log($"[Serwer] Gracz {playerId} rozłączony.");
             _clientWriters.TryRemove(playerId, out _);
             
             lock (_gameLock)
             {
                 CurrentLevel.EntityManager.RemoveEntity(player);
+                player.Dispose();
             }
+            _availablePids.Enqueue(playerId);
             tcpClient.Close();
         }
     }
 
     private Player SpawnPlayer(int playerId)
     {
-        var newPlayer = new Player($"{_config.PlayerName} {playerId}", CurrentLevel.EventBus) { Id = playerId };
+        var newPlayer = new Player($"{_config.PlayerName} {playerId}", CurrentLevel.EventBus) { Id = playerId, Symbol = char.Parse(playerId.ToString())};
         CurrentLevel.EntityManager.RegisterEntity(newPlayer);
         newPlayer.Position = CurrentLevel.Map.GetSpawningPosition();
         return newPlayer;

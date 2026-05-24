@@ -1,5 +1,4 @@
 using maze_runner.Model.Core.Events;
-using maze_runner.Model.Entities.Mobs;
 
 namespace maze_runner.Model.Entities;
 
@@ -14,7 +13,8 @@ public class EntityManager(IEventPublisher eventPublisher)
 
     public void RemoveDeadEntities()
     {
-        foreach (var entity in _entities.Where(entity => !entity.IsAlive))
+        var deadEntities = _entities.Where(entity => !entity.IsAlive).ToList();
+        foreach (var entity in deadEntities)
         {
             _entities.Remove(entity);
             entity.Dispose();

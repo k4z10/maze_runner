@@ -1,6 +1,6 @@
 using maze_runner.Model.Core.Events;
 using maze_runner.Model.Entities;
-using maze_runner.Model.Entities.Mobs;
+using maze_runner.Model.Entities.Hostile;
 
 namespace maze_runner.Model.Dungeon.Themes.Library;
 

@@ -6,7 +6,7 @@ public class GuaranteedWeightedPool<T>
     private readonly Random _random = new();
     private int _totalWeight = 0;
 
-    private Queue<Func<T>> _mandatoryQueue;
+    private Queue<Func<T>> _mandatoryQueue = new();
     private bool _isInitialized = false;
 
     public void Add(Func<T> factory, int weight)

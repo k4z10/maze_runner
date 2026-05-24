@@ -1,16 +1,14 @@
-using System.Data;
-using System.Reflection.Metadata;
 using maze_runner.Model.Core;
 using maze_runner.Model.Core.Events;
 
-namespace maze_runner.Model.Entities.Mobs;
+namespace maze_runner.Model.Entities.Hostile;
 
 public class Goblin : Entity
 {
     private readonly GoblinTribe _myTribe;
     private int _fearModifier = 0;
 
-    public override char Symbol => 'G';
+    public override char Symbol { get; set; } = 'G';
     public override int EffectiveDefense => Math.Max(0, BaseDefense + _fearModifier);
 
     public Goblin(GoblinTribe tribe, EventBus bus) : base("Goblin", maxHealth: 20, bus: bus)

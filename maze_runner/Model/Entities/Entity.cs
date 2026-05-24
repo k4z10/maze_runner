@@ -1,16 +1,15 @@
 using maze_runner.Model.Core;
 using maze_runner.Model.Core.Events;
-using maze_runner.Model.Entities.Player.Components;
 
 namespace maze_runner.Model.Entities;
 
 public abstract class  Entity : IDisposable
 {
-    private static int _entityId = 10;
+    private static int _entityId = 9;
     public int Id { get; init; } 
     public (int Row, int Col) Position { get; set; }
     public string Name { get; protected set; }
-    public abstract char Symbol { get; }
+    public abstract char Symbol { get; set; }
 
     public int MaxHealth { get; protected set; }
     public int Health { get; private set; }

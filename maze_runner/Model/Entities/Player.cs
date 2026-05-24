@@ -1,7 +1,6 @@
 using maze_runner.Model.Core.Events;
-using maze_runner.Model.Entities.Player.Components;
 
-namespace maze_runner.Model.Entities.Player;
+namespace maze_runner.Model.Entities;
 
 public class Player(string name, EventBus bus) : Entity(name, maxHealth: 100, bus: bus)
 {
@@ -22,7 +21,7 @@ public class Player(string name, EventBus bus) : Entity(name, maxHealth: 100, bu
             return s;
         }
     }
-    public override char Symbol => '@';
+    public override char Symbol { get; set; } = '@';
 }
 
 
