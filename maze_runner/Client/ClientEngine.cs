@@ -16,7 +16,13 @@ public class ClientEngine
 
     private IGameFrontend _frontend = null!;
     private GameStateSnapshotDto? _latestSnapshot;
+    private readonly InputController _inputController;
     private int _myPlayerId;
+
+    public ClientEngine()
+    {
+        _inputController = new InputController(SendNetworkCommand);
+    }
 
     public async Task ConnectAndRunAsync(string ip, int port, CancellationToken token = default)
     {
@@ -33,8 +39,7 @@ public class ClientEngine
             if (string.IsNullOrEmpty(handshake) || !int.TryParse(handshake, out _myPlayerId))
                 throw new AuthenticationException("Server did not respond");
 
-            _frontend = new TerminalFrontend(_myPlayerId);
-            _frontend.OnKeyPressed += HandleInput;
+            _frontend = new TerminalFrontend(_myPlayerId, _inputController);
 
             _ = Task.Run(() => ReceiveLoopAsync(token), token);
 
@@ -55,15 +60,15 @@ public class ClientEngine
         {
             while (_tcpClient.Connected)
             {
-                string? json = await _reader.ReadLineAsync(token);
+                var json = await _reader.ReadLineAsync(token);
                 if (string.IsNullOrEmpty(json)) break;
 
                 var snapshot = JsonSerializer.Deserialize<GameStateSnapshotDto>(json);
-                if (snapshot != null)
-                {
-                    _latestSnapshot = snapshot;
-                    _frontend.RenderSnapshot(snapshot);
-                }
+                if (snapshot == null) continue;
+                _latestSnapshot = snapshot;
+                if (snapshot.LevelMeta != null)
+                    _inputController.UpdateAvailableNetworkCommand(snapshot.LevelMeta.Commands.ToDictionary(cmd => cmd.CommandId, cmd => cmd.Description));
+                _frontend.RenderSnapshot(snapshot);
             }
         }
         catch (OperationCanceledException) {}
@@ -78,29 +83,17 @@ public class ClientEngine
         }
     }
 
-    private void HandleInput(char key)
+    private void SendNetworkCommand(string commandId)
     {
         if (!_tcpClient.Connected) return;
-
-        string? commandId = null;
-        var args = new Dictionary<string, string>();
-
-        var dynamicBinding = _latestSnapshot?.LevelMeta?.Commands.FirstOrDefault(c => c.Key == key);
-        if (dynamicBinding != null)
+        var request = new ActionRequestDto()
         {
-            commandId = dynamicBinding.CommandId;
-        }
-
-        if (commandId != null)
-        {
-            var request = new ActionRequestDto
-            {
-                PlayerId = _myPlayerId,
-                CommandId = commandId,
-            };
-
-            string jsonPayload = JsonSerializer.Serialize(request);
-            _writer.WriteLine(jsonPayload);
-        }
+            PlayerId = _myPlayerId,
+            CommandId = commandId
+        };
+        
+        var payload = JsonSerializer.Serialize(request);
+        _writer.WriteLine(payload);
     }
+
 }

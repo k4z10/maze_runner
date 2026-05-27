@@ -28,10 +28,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             for (int y = 0; y < height; y++)
                 _spawnableCords.Add((x, y));
         
-        _ctx.CommandRegistry.RegisterCommand('w',"MOVE_U", new Move(-1, 0), "Move up");
-        _ctx.CommandRegistry.RegisterCommand('s',"MOVE_D", new Move(1, 0), "Move down");
-        _ctx.CommandRegistry.RegisterCommand('a',"MOVE_L", new Move(0, -1), "Move left");
-        _ctx.CommandRegistry.RegisterCommand('d',"MOVE_R", new Move(0, 1), "Move right");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_U", new Move(-1, 0), "Move up");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_D", new Move(1, 0), "Move down");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_L", new Move(0, -1), "Move left");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_R", new Move(0, 1), "Move right");
         
         return this;
     }
@@ -46,10 +46,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
         
         _spawnableCords.Clear();
         
-        _ctx.CommandRegistry.RegisterCommand('w',"MOVE_U", new Move(-1, 0), "Move up");
-        _ctx.CommandRegistry.RegisterCommand('s',"MOVE_D", new Move(1, 0), "Move down");
-        _ctx.CommandRegistry.RegisterCommand('a',"MOVE_L", new Move(0, -1), "Move left");
-        _ctx.CommandRegistry.RegisterCommand('d',"MOVE_R", new Move(0, 1), "Move right");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_U", new Move(-1, 0), "Move up");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_D", new Move(1, 0), "Move down");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_L", new Move(0, -1), "Move left");
+        _ctx.CommandRegistry.RegisterCommand("MOVE_R", new Move(0, 1), "Move right");
         
         return this;
     }
@@ -106,10 +106,10 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _ctx.Map.GetTile(randomCords.Item1, randomCords.Item2).AddItem(pool.GetItem());
         }
 
-        _ctx.CommandRegistry.RegisterCommand('e', "PICKUP", new PickUp(), "Pick item from the ground");
-        _ctx.CommandRegistry.RegisterCommand('q', "DROP", new Drop(), "Drop selected item from inventory");
-        _ctx.CommandRegistry.RegisterCommand('f', "EQUIP", new Equip(), "Equip selected item");
-        _ctx.CommandRegistry.RegisterCommand('F', "UNEQUIP", new Unequip(), "Unequip item (from Hands)");
+        _ctx.CommandRegistry.RegisterCommand("PICKUP", new PickUp(), "Pick item from the ground");
+        _ctx.CommandRegistry.RegisterCommand("DROP", new Drop(), "Drop selected item from inventory");
+        _ctx.CommandRegistry.RegisterCommand("EQUIP", new Equip(), "Equip selected item");
+        _ctx.CommandRegistry.RegisterCommand("UNEQUIP", new Unequip(), "Unequip item (from Hands)");
         
         return this;
     }
@@ -125,9 +125,9 @@ public class ProcDungeonBuilder : IBaseDungeonBuilder, IModifierDungeonBuilder
             _ctx.EntityManager.RegisterEntity(enemy);
         }
         
-        _ctx.CommandRegistry.RegisterCommand('z', "ATTACK_N", new Attack(new NormalAttack()), "Perform -normal- attack");
-        _ctx.CommandRegistry.RegisterCommand('x', "ATTACK_S", new Attack(new StealthAttack()), "Perform -stealth- attack");
-        _ctx.CommandRegistry.RegisterCommand('c', "ATTACK_M", new Attack(new MagicAttack()), "Perform -magic- attack");
+        _ctx.CommandRegistry.RegisterCommand("ATTACK_N", new Attack(new NormalAttack()), "Perform -normal- attack");
+        _ctx.CommandRegistry.RegisterCommand("ATTACK_S", new Attack(new StealthAttack()), "Perform -stealth- attack");
+        _ctx.CommandRegistry.RegisterCommand("ATTACK_M", new Attack(new MagicAttack()), "Perform -magic- attack");
         
         return this;
     }

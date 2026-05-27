@@ -33,29 +33,29 @@ public class TerminalFrontend : IGameFrontend
     private int _itemInfoToggle = 0;
     private int _howToPlayOverlayToggle = 1;
     private int _journalOverlayToggle = 0;
-    
-    private InputHandler _uiInput = new();
+
+    private readonly InputController _inputController;
     private GameStateSnapshotDto? _state;
     private readonly int _myPlayerId;
-    private readonly ObservableCollection<string> _localJournal = new();
-    private readonly ObservableCollection<string> _localJournalFrame = new(); 
-
-    public event Action<char>? OnKeyPressed;
+    private readonly ObservableCollection<string> _localJournalPreview = new();
+    private readonly ObservableCollection<string> _localJournalMain = new(); 
     
-    public TerminalFrontend(int myPlayerId)
+    public TerminalFrontend(int myPlayerId, InputController inputController)
     {
+        _inputController =  inputController;
         _myPlayerId = myPlayerId;
         
-        _uiInput.RegisterCommand('?', ToggleHelp , "Toggle help menu");
-        _uiInput.RegisterCommand('i', ToggleItemInfo, "Toggle in-game info overlay");
-        _uiInput.RegisterCommand('j', ToggleJournal, "Toggle journal overlay" ); 
+        _inputController.RegisterLocalAction('?', ToggleHelp , "Toggle help menu");
+        _inputController.RegisterLocalAction('i', ToggleItemInfo, "Toggle in-game info overlay");
+        _inputController.RegisterLocalAction('j', ToggleJournal, "Toggle journal overlay");
+        _inputController.RegisterLocalAction((char)27, Quit, "Quit game");
     }
 
     public void Run()
     {
         Application.Init();
 
-        ColorScheme scheme = new ColorScheme()
+        var scheme = new ColorScheme()
         {
             Normal = new Attribute(Color.White, Color.Black),
             Focus = new Attribute(Color.White, Color.Black),
@@ -88,42 +88,34 @@ public class TerminalFrontend : IGameFrontend
     
     public void RenderSnapshot(GameStateSnapshotDto newState)
     {
-        _state = newState;
+        Application.Invoke(
+                () =>
+                {
+                    _state = newState;
+            
+                    if (newState.NewLogs != null && newState.NewLogs.Count > 0)
+                        UpdateJournal(newState.NewLogs);
+            
+                    var me = GetMe();
+                    // if (me != null && !me.IsAlive) ShowGameOverModal();
 
-        Application.Invoke(() =>
-        {
-            if (newState.NewLogs != null && newState.NewLogs.Count > 0)
-                UpdateJournal(newState.NewLogs);
-            
-            var me = GetMe();
-            // if (me != null && !me.IsAlive) ShowGameOverModal();
-            
-            Render();
-        });
+                    Render();
+                }
+            );
     }
     
     private EntityDto? GetMe() => _state?.Entities.FirstOrDefault(p => p.Id == _myPlayerId);
 
-    public void ToggleItemInfo() => _itemInfoToggle ^= 1;
-    public void ToggleHelp() => _howToPlayOverlayToggle ^= 1;
-    public void ToggleJournal() => _journalOverlayToggle ^= 1;
-    public void Quit() => Application.RequestStop();
+    private void ToggleItemInfo() => _itemInfoToggle ^= 1;
+    private void ToggleHelp() => _howToPlayOverlayToggle ^= 1;
+    private void ToggleJournal() => _journalOverlayToggle ^= 1;
+    private void Quit() => Application.RequestStop();
 
     private void HandleKeyboard(object sender, Key e)
     {
-        char input;
-        if (e.AsRune.IsAscii)
-            input = (char)e.AsRune.Value;
-        else
-            input = (char)((uint)e.KeyCode & 0xFFFF);
-        
-        if (input == (char)27) Quit();
-        
-        if (!_uiInput.ProcessInput(input))
-            OnKeyPressed?.Invoke(input);
-        
+        char input = e.AsRune.IsAscii ? (char)e.AsRune.Value : (char)((uint)e.KeyCode & 0xFFFF);
+        _inputController.ProcessInput(input);
         e.Handled = true;
-        Render();
     }
 
     void Render()
@@ -136,7 +128,6 @@ public class TerminalFrontend : IGameFrontend
         ItemInfoOverlay();
         MapDisplay();
         InventoryDisplay();
-        _mainWindow.SetNeedsDraw();
     }
     
     private void HandleMouse(object sender, MouseEventArgs args)
@@ -242,7 +233,9 @@ public class TerminalFrontend : IGameFrontend
         if (me == null || _state?.Map == null) return;
         
         var itemsOnMyTile = _state.Map.DroppedItems.Where(i => i.Row == me.Row && i.Col == me.Col).ToList();
-        if (itemsOnMyTile.Any() && _itemInfoToggle == 1)
+        var shouldBeVisible = itemsOnMyTile.Any() && _itemInfoToggle == 1;
+        
+        if (shouldBeVisible)
         {
             _tileInfoTextView.Text = string.Empty;
             foreach (var dto in itemsOnMyTile)
@@ -267,14 +260,10 @@ public class TerminalFrontend : IGameFrontend
             
             _tileInfoOverlay.X = terminalX;
             _tileInfoOverlay.Y = terminalY;
-
-            if (!_tileInfoOverlay.Visible) _tileInfoOverlay.Visible = true;
-            _tileInfoOverlay.SetNeedsDraw();
         }
-        else
-        {
-            if (_tileInfoOverlay.Visible) _tileInfoOverlay.Visible = false;
-        }
+        
+        if (_tileInfoOverlay.Visible !=  shouldBeVisible)
+            _tileInfoOverlay.Visible = shouldBeVisible;
     }
     
     private void ItemInfoOverlay() => _itemTooltipOverlay.Visible = _itemInfoToggle != 0;
@@ -299,19 +288,8 @@ public class TerminalFrontend : IGameFrontend
     {
         var meta = _state?.LevelMeta;
         if (meta == null) return;
-        
-        var sb = new StringBuilder();
-        sb.AppendLine("Level name: " + meta.Name); // TODO
-        sb.AppendLine(meta.Description);
-        sb.AppendLine();
-        sb.AppendLine("1. UI control");
-        sb.AppendLine(_uiInput.ToString());
-        sb.AppendLine();
-        sb.AppendLine("2. In-game actions");
-        foreach (var cmd in meta.Commands)
-            sb.AppendLine($"{cmd.Key} - {cmd.Description}");
-    
-        _howToPlayTextView.Text = sb.ToString();
+
+        _howToPlayTextView.Text = _inputController.ToString();
         _howToPlayOverlay.Visible = _howToPlayOverlayToggle == 1;
     }
 
@@ -319,13 +297,12 @@ public class TerminalFrontend : IGameFrontend
     {
         if (_journalOverlayToggle == 1 && _state != null)
         {
-            _journalListView.SetSource(_localJournal);
             _journalView.Visible = true;
 
-            if (_localJournal.Count <= 0) return;
+            if (_localJournalPreview.Count <= 0) return;
             
-            _journalListView.SelectedItem = _localJournal.Count - 1;
-            var topItem = _localJournal.Count - _journalView.Frame.Height + 2;
+            _journalListView.SelectedItem = _localJournalPreview.Count - 1;
+            var topItem = _localJournalPreview.Count - _journalView.Frame.Height + 2;
             _journalListView.TopItem = topItem > 0 ? topItem : 0;
         }
         else
@@ -338,11 +315,11 @@ public class TerminalFrontend : IGameFrontend
     {
         foreach (var msg in newMessages)
         {
-            _localJournal.Add(msg);
+            _localJournalMain.Add(msg);
             
-            _localJournalFrame.Insert(0, msg);
-            if (_localJournalFrame.Count > 20)
-                _localJournalFrame.RemoveAt(20);
+            _localJournalPreview.Insert(0, msg);
+            if (_localJournalPreview.Count > 20)
+                _localJournalPreview.RemoveAt(20);
         }
     }
 
@@ -632,11 +609,6 @@ public class TerminalFrontend : IGameFrontend
     
     void BuildUI()
     {
-        // ==========================================
-        // 1. Zewnętrzny kontener (Split ekranu na Mapę i Ekwipunek)
-        // ==========================================
-        
-        // MAPA (Lewa strona ekranu)
         var mapFrame = new Terminal.Gui.View()
         {
             X = 0,
@@ -660,7 +632,6 @@ public class TerminalFrontend : IGameFrontend
         _tileInfoOverlay.Add(_tileInfoTextView);
         mapFrame.Add(_mapLabel, _tileInfoOverlay);
 
-        // EKWIPUNEK (Prawa strona ekranu, wypełnia resztę)
         var inventoryFrame = new Terminal.Gui.View()
         {
             X = Pos.Right(mapFrame), 
@@ -669,10 +640,6 @@ public class TerminalFrontend : IGameFrontend
             Height = Dim.Fill(),
             BorderStyle = LineStyle.Single
         };
-
-        // ==========================================
-        // 2. Siatka Ekwipunku (Wewnątrz prawej ramki)
-        // ==========================================
 
         var handsFrame = new Terminal.Gui.View()
         {
@@ -691,10 +658,6 @@ public class TerminalFrontend : IGameFrontend
         leftHandFrame.Add(_leftHandLabel);
         rightHandFrame.Add(_rightHandLabel);
         handsFrame.Add(leftHandFrame, rightHandFrame);
-
-        // ----------------------------------------------------
-        // LEWA KOLUMNA (70% szerokości): Itemy, Złoto, Dziennik
-        // ----------------------------------------------------
 
         var itemsFrame = new Terminal.Gui.View()
         {
@@ -725,10 +688,6 @@ public class TerminalFrontend : IGameFrontend
             Title = " Log ",
             BorderStyle = LineStyle.Rounded
         };
-
-        // ----------------------------------------------------
-        // PRAWA KOLUMNA (30% szerokości): Atrybuty (Do samego dołu)
-        // ----------------------------------------------------
 
         var attributesFrame = new Terminal.Gui.View()
         {
@@ -773,15 +732,12 @@ public class TerminalFrontend : IGameFrontend
         accountFrame.Add(_accountLabel);
 
         var journalMiniListView = new ListView() { Width = Dim.Fill(), Height = Dim.Fill(), AllowsMarking = false };
-        journalMiniListView.SetSource(_localJournalFrame);
+        journalMiniListView.SetSource(_localJournalPreview);
         journalFrame.Add(journalMiniListView);
 
         inventoryFrame.Add(handsFrame, itemsFrame, accountFrame, journalFrame, attributesFrame);
 
-        // ==========================================
-        // 3. Ekrany Modalne (Overlays na cały ekran)
-        // ==========================================
-        
+        // Modals
         _howToPlayOverlay = new Terminal.Gui.View()
         {
             X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(),
@@ -800,7 +756,7 @@ public class TerminalFrontend : IGameFrontend
             Visible = false,
         };
         _journalListView = new ListView() { Width = Dim.Fill(), Height = Dim.Fill() };
-        _journalListView.SetSource(_localJournal);
+        _journalListView.SetSource(_localJournalMain);
         _journalView.Add(_journalListView);
 
         // Dodanie wszystkiego do głównego okna

@@ -144,13 +144,12 @@ public static class SnapshotGenerator
             Name = ctx.LevelName
         };
 
-        foreach (var kvp in ctx.CommandRegistry.KeyBindings)
+        foreach (var kvp in ctx.CommandRegistry.Handlers)
         {
             meta.Commands.Add(new CommandBindingDto
             {
-                CommandId = kvp.Value,
-                Description = ctx.CommandRegistry.Descriptions[kvp.Value],
-                Key = kvp.Key
+                CommandId = kvp.Key,
+                Description = ctx.CommandRegistry.Descriptions[kvp.Key],
             });
         }
         

@@ -5,5 +5,4 @@ public interface IGameFrontend
 {
     void Run();
     void RenderSnapshot(GameStateSnapshotDto snapshot);
-    event Action<char> OnKeyPressed;
 }
